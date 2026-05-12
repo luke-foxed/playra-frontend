@@ -1,8 +1,7 @@
-import { createClient } from "@supabase/supabase-js"
 import type { AuthSession } from "@supabase/supabase-js"
 import { createContext, useEffect, useState } from "react"
+import supabase from "../lib/supabase_client"
 
-const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY)
 
 const AuthContext = createContext({
   session: null as AuthSession | null,
