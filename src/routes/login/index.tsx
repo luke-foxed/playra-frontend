@@ -1,14 +1,19 @@
 import { createFileRoute } from '@tanstack/react-router'
+import useLogin from '../../hooks/useLogin'
 
 export const Route = createFileRoute('/login/')({
   component: RouteComponent,
 })
 
 function RouteComponent() {
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const { mutateAsync: login } = useLogin()
+  const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
-    // const form = new FormData(e.currentTarget)
-    // TODO: sign in with form.get('email') and form.get('password')
+
+    const form = new FormData(e.currentTarget)
+    const password = form.get("password") as string
+
+    await login({ email: form.get("email") as string, password })
   }
 
   return (

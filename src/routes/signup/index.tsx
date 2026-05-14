@@ -6,9 +6,9 @@ export const Route = createFileRoute("/signup/")({
 })
 
 function RouteComponent() {
-  const { mutateAsync } = useSignup()
+  const { mutateAsync: signup } = useSignup()
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
 
     const form = new FormData(e.currentTarget)
@@ -17,7 +17,7 @@ function RouteComponent() {
 
     if (password !== confirmPassword) return
 
-    await mutateAsync({ email: form.get("email") as string, password })
+    await signup({ email: form.get("email") as string, password })
   }
 
   return (
