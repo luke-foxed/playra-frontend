@@ -13,5 +13,15 @@ const defaultParams = {
 function RouteComponent() {
   const { data, isLoading } = useGetGames(defaultParams)
 
-  return <div>{isLoading ? "Loading..." : data?.results.map((game) => <div key={game.id}>{game.name}</div>)}</div>
+  return (
+    <div>
+      {isLoading
+        ? "Loading..."
+        : data?.results.map((game) => (
+            <div key={game.id}>
+              <a href={`/games/${game.id}`}>{game.name}</a>
+            </div>
+          ))}
+    </div>
+  )
 }
