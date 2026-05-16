@@ -10,13 +10,22 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@mantine/code-highlight": "^9.2.1",
+    "@mantine/core": "^9.2.1",
+    "@mantine/dates": "^9.2.1",
+    "@mantine/form": "^9.2.1",
+    "@mantine/hooks": "^9.2.1",
+    "@mantine/modals": "^9.2.1",
+    "@mantine/notifications": "^9.2.1",
     "@supabase/supabase-js": "^2.105.1",
     "@tanstack/react-query": "^5.100.10",
     "@tanstack/react-router": "^1.169.2",
     "@tanstack/react-router-devtools": "^1.166.13",
     "axios": "^1.16.0",
+    "dayjs": "^1.11.20",
     "react": "^19.2.5",
-    "react-dom": "^19.2.5"
+    "react-dom": "^19.2.5",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@babel/core": "^7.29.0",
@@ -33,6 +42,9 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.5.0",
+    "postcss": "^8.5.14",
+    "postcss-preset-mantine": "^1.18.0",
+    "postcss-simple-vars": "^7.0.1",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.58.2",
     "vite": "^8.0.10"

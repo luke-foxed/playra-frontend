@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
-import useGetGames from "../../hooks/useGetGame"
+import useGetGames from "../../features/games/hooks/useGetGame"
 
 export const Route = createFileRoute("/games/$id")({
   component: RouteComponent,

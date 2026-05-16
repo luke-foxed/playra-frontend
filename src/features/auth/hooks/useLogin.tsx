@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query"
-import supabase from "../lib/supabase_client"
+import supabase from "../../../lib/supabase_client"
 
 type LoginProps = {
   email: string
@@ -13,5 +13,5 @@ async function login({ email, password }: LoginProps) {
 }
 
 export default function useLogin() {
-  return useMutation({ mutationFn: login, onSuccess: ({ user }) => console.log(user) })
+  return useMutation({ mutationFn: login })
 }

@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query"
 import { getGame } from "../api/games"
 
-export default function useGetGames(id: number) {
+export default function useGetGame(id: number) {
   return useQuery({
-    queryKey: ["games", id],
+    queryKey: ["game", id],
     queryFn: () => getGame(id),
   })
 }

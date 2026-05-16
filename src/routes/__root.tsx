@@ -1,8 +1,10 @@
 import { Outlet, createRootRoute, Link } from "@tanstack/react-router"
-import AuthProvider from "../providers/auth_provider"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import useGetUser from "../hooks/useGetUser"
+import { MantineProvider } from '@mantine/core';
+import AuthProvider from "../features/auth/providers/auth_provider"
+import useGetUser from "../features/auth/hooks/useGetUser"
 import supabase from "../lib/supabase_client"
+import '@mantine/core/styles.css';
 
 export const Route = createRootRoute({
   component: RootComponent,
@@ -21,7 +23,7 @@ function Nav() {
       <Link to='/'>Home</Link>
       <Link to='/login'>Login</Link>
       <Link to='/signup'>Signup</Link>
-      <Link to='/games'>Games</Link>
+      <Link to='/games' search={{ page: 1, page_size: 20 }}>Games</Link>
       {user && <button onClick={() => supabase.auth.signOut()}>Logout</button>}
     </nav>
   )
@@ -31,9 +33,11 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Nav />
-        <hr />
-        <Outlet />
+        <MantineProvider>
+          <Nav />
+          <hr />
+          <Outlet />
+        </MantineProvider>
       </AuthProvider>
     </QueryClientProvider>
   )
