@@ -12,7 +12,6 @@ apiClient.interceptors.request.use(async (config) => {
   const { data, error } = await supabase.auth.getSession()
 
   if (error) {
-    console.warn("Failed to get session:", error.message)
     return config
   }
 

@@ -5,7 +5,6 @@ import useGetProfile from "../auth/hooks/useGetProfile"
 export default function Navbar() {
   const profile = useGetProfile()
 
-  console.log("Navbar profile", profile)
 
   return (
     <nav>

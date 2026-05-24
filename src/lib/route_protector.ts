@@ -6,7 +6,6 @@ export default async function routeProtector({ location }: { location: { href: s
   try {
     const authUser = await supabase.auth.getUser()
 
-    console.log("authUser", authUser)
 
     if (!authUser.data.user) {
       throw redirect({
@@ -17,7 +16,6 @@ export default async function routeProtector({ location }: { location: { href: s
 
     const profile = await getProfile(authUser.data.user.id)
 
-    console.log("profile", profile)
 
     if (profile.role !== "active" && profile.role !== "admin") {
       throw redirect({
@@ -29,7 +27,6 @@ export default async function routeProtector({ location }: { location: { href: s
     return authUser.data.user
   } catch (error) {
 
-    console.error("Route protector error:", error)
 
     if (isRedirect(error)) throw error
 
