@@ -11,8 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SignupIndexRouteImport } from './routes/signup/index'
+import { Route as RestrictedIndexRouteImport } from './routes/restricted/index'
 import { Route as LoginIndexRouteImport } from './routes/login/index'
 import { Route as GamesIndexRouteImport } from './routes/games/index'
+import { Route as ProfileIdRouteImport } from './routes/profile/$id'
 import { Route as GamesIdRouteImport } from './routes/games/$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -25,6 +27,11 @@ const SignupIndexRoute = SignupIndexRouteImport.update({
   path: '/signup/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RestrictedIndexRoute = RestrictedIndexRouteImport.update({
+  id: '/restricted/',
+  path: '/restricted/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginIndexRoute = LoginIndexRouteImport.update({
   id: '/login/',
   path: '/login/',
@@ -33,6 +40,11 @@ const LoginIndexRoute = LoginIndexRouteImport.update({
 const GamesIndexRoute = GamesIndexRouteImport.update({
   id: '/games/',
   path: '/games/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileIdRoute = ProfileIdRouteImport.update({
+  id: '/profile/$id',
+  path: '/profile/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GamesIdRoute = GamesIdRouteImport.update({
@@ -44,38 +56,68 @@ const GamesIdRoute = GamesIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/games/$id': typeof GamesIdRoute
+  '/profile/$id': typeof ProfileIdRoute
   '/games/': typeof GamesIndexRoute
   '/login/': typeof LoginIndexRoute
+  '/restricted/': typeof RestrictedIndexRoute
   '/signup/': typeof SignupIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/games/$id': typeof GamesIdRoute
+  '/profile/$id': typeof ProfileIdRoute
   '/games': typeof GamesIndexRoute
   '/login': typeof LoginIndexRoute
+  '/restricted': typeof RestrictedIndexRoute
   '/signup': typeof SignupIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/games/$id': typeof GamesIdRoute
+  '/profile/$id': typeof ProfileIdRoute
   '/games/': typeof GamesIndexRoute
   '/login/': typeof LoginIndexRoute
+  '/restricted/': typeof RestrictedIndexRoute
   '/signup/': typeof SignupIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/games/$id' | '/games/' | '/login/' | '/signup/'
+  fullPaths:
+    | '/'
+    | '/games/$id'
+    | '/profile/$id'
+    | '/games/'
+    | '/login/'
+    | '/restricted/'
+    | '/signup/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/games/$id' | '/games' | '/login' | '/signup'
-  id: '__root__' | '/' | '/games/$id' | '/games/' | '/login/' | '/signup/'
+  to:
+    | '/'
+    | '/games/$id'
+    | '/profile/$id'
+    | '/games'
+    | '/login'
+    | '/restricted'
+    | '/signup'
+  id:
+    | '__root__'
+    | '/'
+    | '/games/$id'
+    | '/profile/$id'
+    | '/games/'
+    | '/login/'
+    | '/restricted/'
+    | '/signup/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   GamesIdRoute: typeof GamesIdRoute
+  ProfileIdRoute: typeof ProfileIdRoute
   GamesIndexRoute: typeof GamesIndexRoute
   LoginIndexRoute: typeof LoginIndexRoute
+  RestrictedIndexRoute: typeof RestrictedIndexRoute
   SignupIndexRoute: typeof SignupIndexRoute
 }
 
@@ -95,6 +137,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignupIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/restricted/': {
+      id: '/restricted/'
+      path: '/restricted'
+      fullPath: '/restricted/'
+      preLoaderRoute: typeof RestrictedIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login/': {
       id: '/login/'
       path: '/login'
@@ -107,6 +156,13 @@ declare module '@tanstack/react-router' {
       path: '/games'
       fullPath: '/games/'
       preLoaderRoute: typeof GamesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile/$id': {
+      id: '/profile/$id'
+      path: '/profile/$id'
+      fullPath: '/profile/$id'
+      preLoaderRoute: typeof ProfileIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/games/$id': {
@@ -122,8 +178,10 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GamesIdRoute: GamesIdRoute,
+  ProfileIdRoute: ProfileIdRoute,
   GamesIndexRoute: GamesIndexRoute,
   LoginIndexRoute: LoginIndexRoute,
+  RestrictedIndexRoute: RestrictedIndexRoute,
   SignupIndexRoute: SignupIndexRoute,
 }
 export const routeTree = rootRouteImport

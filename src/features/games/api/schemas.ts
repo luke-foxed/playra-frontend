@@ -29,15 +29,19 @@ export const GameSchema = z.object({
   metacritic: z.number().nullable(),
   genres: z.array(GenreSchema),
   platforms: z.array(PlatformSchema),
-  short_screenshots: z.array(ScreenshotSchema),
+  short_screenshots: z.array(ScreenshotSchema).optional(),
 })
+
+export const EsrbRatingSchema = z.object({ id: z.number(), name: z.string(), slug: z.string() })
 
 export const GameDetailSchema = GameSchema.extend({
   description_raw: z.string(),
   website: z.string(),
+  playtime: z.number(),
   developers: z.array(DeveloperSchema),
   publishers: z.array(PublisherSchema),
   tags: z.array(TagSchema),
+  esrb_rating: EsrbRatingSchema.nullable().optional(),
 })
 
 export type Genre = z.infer<typeof GenreSchema>
@@ -83,3 +87,22 @@ export const GamesSearchSchema = z.object({
 })
 
 export type GetGamesParams = z.infer<typeof GamesSearchSchema>
+
+export const paginatedResponse = <T extends z.ZodTypeAny>(schema: T) =>
+  z.object({
+    count: z.number(),
+    next: z.string().nullable(),
+    previous: z.string().nullable(),
+    results: z.array(schema),
+  })
+
+export type PaginatedResponse<T> = {
+  count: number
+  next: string | null
+  previous: string | null
+  results: T[]
+}
+
+export const GamesResponseSchema = paginatedResponse(GameSchema)
+
+export type GamesResponse = z.infer<typeof GamesResponseSchema>

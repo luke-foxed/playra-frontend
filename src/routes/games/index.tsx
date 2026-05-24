@@ -3,9 +3,11 @@ import { Box, Grid, Group, Pagination, Select } from "@mantine/core"
 import GameCard from "../../features/games/components/game_card"
 import { getGames } from "../../features/games/api/games"
 import { GamesSearchSchema } from "../../features/games/api/schemas"
+import routeProtector from "../../lib/route_protector"
 
 export const Route = createFileRoute("/games/")({
   component: RouteComponent,
+  beforeLoad: routeProtector,
   validateSearch: GamesSearchSchema.parse,
   loaderDeps: ({ search }) => search,
   loader: ({ deps }) => getGames(deps),
