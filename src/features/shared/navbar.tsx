@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router"
 import supabase from "../../lib/supabase_client"
-import useGetProfile from "../auth/hooks/useGetProfile"
+import useGetProfile from "../profile/hooks/useGetProfile"
 
 export default function Navbar() {
   const profile = useGetProfile()

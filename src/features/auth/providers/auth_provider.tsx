@@ -1,7 +1,7 @@
 import type { AuthSession } from "@supabase/supabase-js"
 import { createContext, useEffect, useState } from "react"
 import supabase from "../../../lib/supabase_client"
-import type { Profile } from "../api/schema"
+import type { Profile } from "../../profile/api/schema"
 import useGetAuth from "../hooks/useGetAuth"
 
 export const AuthContext = createContext({

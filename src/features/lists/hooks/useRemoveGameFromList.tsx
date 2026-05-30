@@ -1,0 +1,14 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { notifications } from "@mantine/notifications"
+import { removeGamesFromList } from "../api/lists"
+
+export default function useRemoveGameFromList(selectedListId: string | null) {
+  const qc = useQueryClient()
+  const { mutateAsync, isPending, isError } = useMutation({
+    mutationFn: ({ listId, gameId }: { listId: string; gameId: number }) =>
+      removeGamesFromList(listId, [gameId]),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["list", selectedListId] }),
+    onError: () => notifications.show({ message: "Failed to remove game", color: "red" }),
+  })
+  return { removeGame: mutateAsync, isLoading: isPending, isError }
+}

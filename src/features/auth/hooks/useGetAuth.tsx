@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import supabase from "../../../lib/supabase_client"
-import { getProfile } from "../api/profile"
+import { getProfile } from "../../profile/api/profile"
 
 export default function useGetAuth(userId: string | undefined) {
   return useQuery({

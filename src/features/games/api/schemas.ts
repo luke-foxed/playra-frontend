@@ -106,3 +106,11 @@ export type PaginatedResponse<T> = {
 export const GamesResponseSchema = paginatedResponse(GameSchema)
 
 export type GamesResponse = z.infer<typeof GamesResponseSchema>
+
+export const UserGameSchema = z.object({
+  in_wishlist: z.boolean(),
+  rating: z.number().nullable().optional(),
+  lists: z.array(z.object({ id: z.string(), name: z.string() })),
+})
+
+export type UserGame = z.infer<typeof UserGameSchema>
