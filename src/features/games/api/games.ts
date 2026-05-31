@@ -29,3 +29,10 @@ export const gameQueryOptions = (id: number) =>
 
 export const userGameQueryOptions = (id: number) =>
   queryOptions({ queryKey: ["userGame", id], queryFn: () => getUserGame(id) })
+
+export const gamesQueryOptions = (params: GetGamesParams) =>
+  queryOptions({
+    queryKey: ["games", params],
+    queryFn: () => getGames(params),
+    staleTime: 5 * 60 * 1000,
+  })

@@ -20,7 +20,7 @@ export const GameSchema = z.object({
   id: z.number(),
   slug: z.string(),
   name: z.string(),
-  released: z.string(),
+  released: z.string().nullable(),
   background_image: z.string().nullable(),
   rating: z.number(),
   rating_top: z.number(),

@@ -1,0 +1,46 @@
+/* Minimal overrides — only what Mantine cannot express */
+
+/* Selection color */
+::selection { background: #8B6BFF; color: #fff; }
+
+/* Hero background pan on hover */
+.hero-container {
+  transform: translateZ(0);
+}
+.hero-bg-img {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  transition: transform 0.4s ease;
+}
+.hero-container:hover .hero-bg-img {
+  transform: scale(1.03);
+}
+
+/* Horizontal scroll rail with snap */
+.scroll-rail {
+  display: flex;
+  gap: 18px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+  scrollbar-color: var(--mantine-color-dark-4) transparent;
+}
+.scroll-rail > * {
+  scroll-snap-align: start;
+  flex-shrink: 0;
+}
+
+/* Hover-reveal remove button on list cards */
+.removable { position: relative; }
+.remove-btn {
+  position: absolute !important;
+  top: 10px;
+  right: 10px;
+  opacity: 0;
+  transition: opacity 0.14s;
+}
+.removable:hover .remove-btn { opacity: 1; }
+

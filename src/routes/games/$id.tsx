@@ -1,163 +1,352 @@
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useState } from 'react'
+import { useSuspenseQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  Badge,
-  Box,
-  Group,
-  Image,
-  Loader,
-  Rating,
-  Stack,
-  Text,
-  Title,
-  Button,
-} from "@mantine/core"
-import { useSuspenseQuery } from "@tanstack/react-query"
-import { gameQueryOptions, userGameQueryOptions } from "../../features/games/api/games"
-import routeProtector from "../../lib/route_protector"
-import { listsQueryOptions } from "../../features/lists/api/lists"
-import useWishlistToggle from "../../features/lists/hooks/useWishlistToggle"
-import useRateGame from "../../features/lists/hooks/useRateGame"
+  Box, Group, Text, Title, Button, Badge, SimpleGrid,
+  Container, Anchor, Stack, TextInput, Checkbox,
+} from '@mantine/core'
+import { Modal } from '@mantine/core'
+import { notifications } from '@mantine/notifications'
+import { gameQueryOptions, userGameQueryOptions, gamesQueryOptions } from '../../features/games/api/games'
+import { listsQueryOptions, addGamesToList, removeGamesFromList, createList } from '../../features/lists/api/lists'
+import routeProtector from '../../lib/route_protector'
+import MetacriticBadge from '../../features/shared/metacritic_badge'
+import StarRating from '../../features/shared/star_rating'
+import GameCard from '../../features/games/components/game_card'
+import { ArrowLeftIcon, HeartIcon, PlusIcon, SparkleIcon, ListIcon, GlobeIcon, LockIcon } from '../../features/shared/icons'
+import useWishlistToggle from '../../features/lists/hooks/useWishlistToggle'
+import useRateGame from '../../features/lists/hooks/useRateGame'
 
-export const Route = createFileRoute("/games/$id")({
+export const Route = createFileRoute('/games/$id')({
   component: RouteComponent,
   beforeLoad: routeProtector,
   loader: async ({ context: { queryClient }, params }) => {
     const id = Number(params.id)
+    const game = await queryClient.ensureQueryData(gameQueryOptions(id))
     await Promise.all([
-      queryClient.ensureQueryData(gameQueryOptions(id)),
       queryClient.ensureQueryData(userGameQueryOptions(id)),
       queryClient.ensureQueryData(listsQueryOptions()),
+      game.genres[0]
+        ? queryClient.ensureQueryData(gamesQueryOptions({ page: 1, page_size: 6, genres: String(game.genres[0].id), ordering: '-metacritic' }))
+        : Promise.resolve(),
     ])
   },
-  pendingComponent: () => <Loader />,
+  pendingComponent: () => <Container size={1240} py="xl"><Text c="dark.2">Loading…</Text></Container>,
 })
 
 function RouteComponent() {
   const params = Route.useParams()
+  const navigate = useNavigate()
   const id = Number(params.id)
+  const qc = useQueryClient()
 
   const { data: game } = useSuspenseQuery(gameQueryOptions(id))
   const { data: userGame } = useSuspenseQuery(userGameQueryOptions(id))
   const { data: myLists } = useSuspenseQuery(listsQueryOptions())
 
-  const wishlist = myLists.find((l) => l.type === "wishlist")
-  const playlist = myLists.find((l) => l.type === "playlist")
+  const genreId = game.genres[0]?.id
+  const { data: similarData } = useSuspenseQuery(
+    gamesQueryOptions({ page: 1, page_size: 6, genres: genreId ? String(genreId) : '0', ordering: '-metacritic' })
+  )
+  const similar = similarData.results.filter((g) => g.id !== game.id).slice(0, 6)
+
+  const wishlist = myLists.find((l) => l.type === 'wishlist')
+  const playlist = myLists.find((l) => l.type === 'playlist')
+  const customLists = myLists.filter((l) => l.type !== 'wishlist')
 
   const inWishlist = userGame.in_wishlist
-  const currentScore = userGame.rating ?? 0
+  const myRating = userGame.rating ?? 0
+  const inLists = userGame.lists ?? []
 
   const gamePayload = {
-    game_id: game.id,
-    name: game.name,
-    released: game.released,
-    genres: game.genres,
-    metacritic: game.metacritic,
-    background_image: game.background_image,
+    game_id: game.id, name: game.name, released: game.released,
+    genres: game.genres, metacritic: game.metacritic, background_image: game.background_image,
   }
 
   const { toggleWishlist, isLoading: wishlistLoading } = useWishlistToggle(id, wishlist)
   const { rateGame, isLoading: ratingLoading } = useRateGame(id, playlist)
+  const [showLists, setShowLists] = useState(false)
+
+  const coverBg: React.CSSProperties = game.background_image
+    ? { backgroundImage: `url(${game.background_image})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+    : { background: 'var(--mantine-color-dark-5)' }
 
   return (
     <Box>
-      {game.background_image && (
-        <Image src={game.background_image} alt={game.name} h={400} fit="cover" mb="md" />
-      )}
+      {/* BANNER */}
+      <Box style={{ position: 'relative', height: 340 }}>
+        <Box style={{ ...coverBg, position: 'absolute', inset: 0 }} />
+        <Box style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(10,15,31,.4) 0%, rgba(10,15,31,.8) 55%, var(--mantine-color-dark-7) 100%)' }} />
+      </Box>
 
-      <Stack gap="md" p="md">
-        <Group justify="space-between" align="flex-start">
-          <Title>{game.name}</Title>
-          <Group gap="xs">
-            {game.metacritic && (
-              <Badge color="green" size="lg">Metacritic {game.metacritic}</Badge>
-            )}
-            <Badge color="yellow" size="lg">⭐ {game.rating.toFixed(1)}</Badge>
-          </Group>
-        </Group>
+      <Container size={1240} px="xl">
+        <Anchor
+          component="button"
+          onClick={() => navigate({ to: '/games', search: { page: 1, page_size: 20 } })}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 7,
+            background: 'rgba(10,15,31,.5)', backdropFilter: 'blur(8px)',
+            border: '1px solid rgba(255,255,255,0.08)', borderRadius: 999,
+            padding: '9px 15px', fontSize: 13, fontWeight: 500,
+            color: 'var(--mantine-color-dark-0)', textDecoration: 'none',
+            marginTop: -20, position: 'relative',
+          }}
+        >
+          <ArrowLeftIcon size={16} /> Back
+        </Anchor>
 
-        <Group gap="xs">
-          <Text size="sm" c="dimmed">Released: {game.released}</Text>
-          <Text size="sm" c="dimmed">·</Text>
-          <Text size="sm" c="dimmed">Playtime: ~{game.playtime}h</Text>
-          {game.esrb_rating && (
-            <>
-              <Text size="sm" c="dimmed">·</Text>
-              <Text size="sm" c="dimmed">ESRB: {game.esrb_rating.name}</Text>
-            </>
-          )}
-        </Group>
-
-        <Group gap="xs">
-          {game.genres.map((g) => (
-            <Badge key={g.id} variant="light">{g.name}</Badge>
-          ))}
-        </Group>
-
-        <Group gap="md" align="center">
-          <Button
-            variant={inWishlist ? "filled" : "outline"}
-            color="blue"
-            loading={wishlistLoading}
-            onClick={() => toggleWishlist({ inWishlist, gamePayload })}
+        <Group mt="xl" align="flex-start" gap={40} wrap="nowrap" style={{ flexDirection: 'row' }}>
+          {/* Cover */}
+          <Box
+            style={{
+              ...coverBg,
+              width: 264, flexShrink: 0, aspectRatio: '3/4',
+              borderRadius: 'var(--mantine-radius-lg)',
+              boxShadow: '0 24px 60px -20px rgba(0,0,0,.8), inset 0 0 0 1px rgba(255,255,255,0.14)',
+              position: 'relative', overflow: 'hidden',
+            }}
           >
-            {inWishlist ? "✓ Wishlist" : "+ Wishlist"}
-          </Button>
-          <Group gap="xs" align="center">
-            <Text size="sm" c="dimmed">Your score:</Text>
-            <Rating
-              size="md"
-              count={10}
-              value={currentScore}
-              onChange={(score) => rateGame({ score, gamePayload })}
-              readOnly={ratingLoading}
-            />
-            {ratingLoading && <Loader size="xs" />}
-          </Group>
+            <Box style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(0deg, transparent 0 3px, rgba(0,0,0,.05) 3px 4px)' }} />
+          </Box>
+
+          {/* Info */}
+          <Stack gap="md" style={{ flex: 1, minWidth: 0, paddingTop: 8 }} pt={8}>
+            <Group gap={7} wrap="wrap">
+              {game.genres.map((g) => (
+                <Badge key={g.id} variant="light" color="violet" radius="xl">{g.name}</Badge>
+              ))}
+            </Group>
+
+            <Title order={1} style={{ fontSize: 44, lineHeight: 1.02, letterSpacing: -1.4, textWrap: 'balance' }}>
+              {game.name}
+            </Title>
+
+            <Text c="dark.1" fz={15}>
+              {game.developers?.[0]?.name ?? ''} · {game.released?.slice(0, 4)}
+            </Text>
+
+            <Group gap={7} wrap="wrap">
+              {game.platforms.map((p) => (
+                <Badge key={p.platform.id} variant="default" radius="xl" fz="xs">{p.platform.name}</Badge>
+              ))}
+            </Group>
+
+            {/* Scores */}
+            <Group gap="xl">
+              <Group gap="sm">
+                <MetacriticBadge score={game.metacritic} size={52} />
+                <Stack gap={1}>
+                  <Text fw={600} fz="sm">Metacritic</Text>
+                  <Text c="dark.2" fz="xs">Critic score</Text>
+                </Stack>
+              </Group>
+              {game.rating > 0 && (
+                <Group gap="sm">
+                  <Box style={{
+                    width: 52, height: 52, borderRadius: '50%',
+                    display: 'grid', placeItems: 'center',
+                    fontFamily: 'var(--mantine-font-family-monospace)', fontWeight: 600, fontSize: 18,
+                    color: '#7CC8E3',
+                    background: 'color-mix(in oklab, #7CC8E3 14%, transparent)',
+                    boxShadow: 'inset 0 0 0 1.5px color-mix(in oklab, #7CC8E3 45%, transparent)',
+                  }}>
+                    {game.rating.toFixed(1)}
+                  </Box>
+                  <Stack gap={1}>
+                    <Text fw={600} fz="sm">User score</Text>
+                    <Text c="dark.2" fz="xs">Community</Text>
+                  </Stack>
+                </Group>
+              )}
+            </Group>
+
+            {/* Actions */}
+            <Group gap="xs" wrap="wrap">
+              <Button
+                color={inWishlist ? 'pink' : 'violet'}
+                variant={inWishlist ? 'light' : 'filled'}
+                leftSection={<HeartIcon size={17} fill={inWishlist} />}
+                loading={wishlistLoading}
+                onClick={() => toggleWishlist({ inWishlist, gamePayload })}
+              >
+                {inWishlist ? 'In Wishlist' : 'Add to Wishlist'}
+              </Button>
+              <Button
+                variant="outline"
+                color="gray"
+                leftSection={<PlusIcon size={17} />}
+                rightSection={inLists.length > 0 ? (
+                  <Badge size="xs" color="violet" variant="filled">{inLists.length}</Badge>
+                ) : undefined}
+                onClick={() => setShowLists(true)}
+              >
+                Add to list
+              </Button>
+            </Group>
+
+            {/* Rating */}
+            <Box
+              style={{
+                display: 'inline-flex', flexDirection: 'column', gap: 10,
+                padding: '18px 20px', background: 'var(--mantine-color-dark-6)',
+                borderRadius: 'var(--mantine-radius-md)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)',
+              }}
+            >
+              <Text fz="xs" tt="uppercase" style={{ letterSpacing: 1.4 }} c="dark.2" fw={600}>
+                {myRating ? 'Your rating' : 'Rate this game'}
+              </Text>
+              <Group gap="md" align="center">
+                <StarRating
+                  value={myRating}
+                  size={30}
+                  readonly={ratingLoading}
+                  onChange={(n) => rateGame({ score: n, gamePayload })}
+                />
+                {myRating > 0 && (
+                  <Anchor component="button" c="violet" fz="sm" onClick={() => rateGame({ score: 0, gamePayload })}>
+                    Clear
+                  </Anchor>
+                )}
+              </Group>
+            </Box>
+
+            {/* In-lists chips */}
+            {inLists.length > 0 && (
+              <Group gap="xs" wrap="wrap">
+                <Text fz="sm" c="dark.2">On your lists:</Text>
+                {inLists.map((l) => (
+                  <Badge key={l.id} variant="light" color="cyan" leftSection={<ListIcon size={12} />} radius="xl">
+                    {l.name}
+                  </Badge>
+                ))}
+              </Group>
+            )}
+
+            {game.description_raw && (
+              <Text c="dark.1" fz="sm" style={{ lineHeight: 1.6, maxWidth: 600 }} lineClamp={6}>
+                {game.description_raw}
+              </Text>
+            )}
+          </Stack>
         </Group>
 
-        <Text>{game.description_raw}</Text>
-
-        <Stack gap="xs">
-          <Text fw={600}>Platforms</Text>
-          <Group gap="xs">
-            {game.platforms.map((p) => (
-              <Badge key={p.platform.id} variant="outline">{p.platform.name}</Badge>
-            ))}
-          </Group>
-        </Stack>
-
-        <Group gap="xl">
-          <Stack gap="xs">
-            <Text fw={600}>Developers</Text>
-            {game.developers.map((d) => (
-              <Text key={d.id} size="sm">{d.name}</Text>
-            ))}
-          </Stack>
-          <Stack gap="xs">
-            <Text fw={600}>Publishers</Text>
-            {game.publishers.map((p) => (
-              <Text key={p.id} size="sm">{p.name}</Text>
-            ))}
-          </Stack>
-        </Group>
-
-        <Stack gap="xs">
-          <Text fw={600}>Tags</Text>
-          <Group gap="xs">
-            {game.tags.map((t) => (
-              <Badge key={t.id} variant="dot" size="sm">{t.name}</Badge>
-            ))}
-          </Group>
-        </Stack>
-
-        {game.website && (
-          <Text size="sm">
-            <a href={game.website} target="_blank" rel="noreferrer">
-              {game.website}
-            </a>
-          </Text>
+        {/* SIMILAR */}
+        {similar.length > 0 && (
+          <Box mt={44} mb={60}>
+            <Group gap={10} mb="md">
+              <Box style={{ color: 'var(--mantine-color-violet-4)', display: 'grid' }}><SparkleIcon size={18} /></Box>
+              <Title order={2} style={{ letterSpacing: -0.6 }}>Similar games</Title>
+            </Group>
+            <SimpleGrid cols={{ base: 2, xs: 3, sm: 3, md: 4, lg: 6 }} spacing="md">
+              {similar.map((g) => (
+                <GameCard key={g.id} id={g.id} name={g.name} imageUrl={g.background_image} metacritic={g.metacritic} released={g.released} genres={g.genres.map((x) => x.name)} />
+              ))}
+            </SimpleGrid>
+          </Box>
         )}
-      </Stack>
+      </Container>
+
+      {showLists && (
+        <AddToListModal
+          gameId={id} gameName={game.name} gamePayload={gamePayload}
+          customLists={customLists} inListIds={inLists.map((l) => l.id)}
+          onClose={() => setShowLists(false)}
+          onRefresh={() => {
+            qc.invalidateQueries(userGameQueryOptions(id))
+            qc.invalidateQueries(listsQueryOptions())
+          }}
+        />
+      )}
     </Box>
+  )
+}
+
+type GamePayload = { game_id: number; name: string; released: string | null; genres: Array<{ id: number; name: string; slug: string }>; metacritic: number | null; background_image: string | null }
+
+function AddToListModal({
+  gameId, gameName, gamePayload, customLists, inListIds, onClose, onRefresh,
+}: {
+  gameId: number; gameName: string; gamePayload: GamePayload
+  customLists: Array<{ id: string; name: string; type: string; is_public: boolean }>
+  inListIds: string[]; onClose: () => void; onRefresh: () => void
+}) {
+  const [creating, setCreating] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [pending, setPending] = useState<string | null>(null)
+
+  const toggle = async (listId: string, isIn: boolean) => {
+    setPending(listId)
+    try {
+      if (isIn) await removeGamesFromList(listId, [gameId])
+      else await addGamesToList(listId, [gamePayload])
+      onRefresh()
+    } catch { notifications.show({ message: 'Failed to update list', color: 'red' }) }
+    finally { setPending(null) }
+  }
+
+  const create = async () => {
+    const nm = newName.trim()
+    if (!nm) return
+    try {
+      const list = await createList({ name: nm, description: null, is_public: false })
+      await addGamesToList(list.id, [gamePayload])
+      notifications.show({ message: `Created "${nm}" & added`, color: 'green' })
+      onRefresh(); setNewName(''); setCreating(false)
+    } catch { notifications.show({ message: 'Failed to create list', color: 'red' }) }
+  }
+
+  return (
+    <Modal opened onClose={onClose} title={<><Text fw={700} fz={19}>Add to list</Text><Text fz="sm" c="dark.2">{gameName}</Text></>} size="md">
+      <Stack gap={2} mb="sm">
+        {customLists.map((l) => {
+          const on = inListIds.includes(l.id)
+          return (
+            <Box
+              key={l.id}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 12, padding: '11px 12px',
+                borderRadius: 'var(--mantine-radius-sm)', cursor: 'pointer',
+                opacity: pending === l.id ? 0.6 : 1,
+                background: on ? 'color-mix(in oklab, var(--mantine-color-violet-5) 12%, transparent)' : 'transparent',
+                transition: 'background 0.12s',
+              }}
+              onClick={() => pending ? undefined : toggle(l.id, on)}
+            >
+              <Checkbox
+                checked={on}
+                onChange={() => undefined}
+                color="violet"
+                radius="sm"
+                styles={{ input: { cursor: 'pointer' } }}
+              />
+              <Text fz="sm" fw={500} style={{ flex: 1 }}>{l.name}</Text>
+              {l.is_public
+                ? <GlobeIcon size={13} style={{ color: '#7CC8E3' }} />
+                : <LockIcon size={13} style={{ color: 'var(--mantine-color-dark-2)' }} />
+              }
+            </Box>
+          )
+        })}
+      </Stack>
+
+      {creating ? (
+        <Group gap="xs" mt="sm">
+          <TextInput
+            placeholder="New list name…"
+            value={newName}
+            autoFocus
+            onChange={(e) => setNewName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && create()}
+            style={{ flex: 1 }}
+          />
+          <Button onClick={create}>Create</Button>
+          <Button variant="default" onClick={() => { setCreating(false); setNewName('') }}>Cancel</Button>
+        </Group>
+      ) : (
+        <Button variant="outline" color="gray" fullWidth mt="sm" leftSection={<PlusIcon size={16} />} onClick={() => setCreating(true)}>
+          Create new list
+        </Button>
+      )}
+    </Modal>
   )
 }
