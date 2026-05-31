@@ -1,128 +1,57 @@
+import {
+  IconSearch,
+  IconX,
+  IconChevronRight,
+  IconHeart,
+  IconHeartFilled,
+  IconClock,
+  IconPlayerPlayFilled,
+  IconFlame,
+  IconSparkles,
+  IconStar,
+  IconStarFilled,
+  IconAdjustments,
+  IconArrowLeft,
+  IconPlus,
+  IconList,
+  IconWorld,
+  IconLock,
+  IconTrash,
+  IconPencil,
+  IconCheck,
+} from '@tabler/icons-react'
+
 type IconProps = { size?: number; fill?: boolean; style?: React.CSSProperties; className?: string }
 
-function Icon({
-  d,
-  size = 18,
-  fill = false,
-  sw = 1.8,
-  children,
-  style,
-  className,
-}: {
-  d?: string
-  size?: number
-  fill?: boolean
-  sw?: number
-  children?: React.ReactNode
-  style?: React.CSSProperties
-  className?: string
-}) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill={fill ? 'currentColor' : 'none'}
-      stroke={fill ? 'none' : 'currentColor'}
-      strokeWidth={sw}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      style={style}
-      className={className}
-    >
-      {d ? <path d={d} /> : children}
-    </svg>
-  )
-}
+export const SearchIcon    = ({ size = 18, style, className }: IconProps) => <IconSearch size={size} style={style} className={className} />
+export const XIcon         = ({ size = 18, style, className }: IconProps) => <IconX size={size} style={style} className={className} />
+export const ChevronIcon   = ({ size = 18, style, className }: IconProps) => <IconChevronRight size={size} style={style} className={className} />
+export const ClockIcon     = ({ size = 18, style, className }: IconProps) => <IconClock size={size} style={style} className={className} />
+export const PlayIcon      = ({ size = 18, style, className }: IconProps) => <IconPlayerPlayFilled size={size} style={style} className={className} />
+export const FireIcon      = ({ size = 18, style, className }: IconProps) => <IconFlame size={size} style={style} className={className} />
+export const SparkleIcon   = ({ size = 18, style, className }: IconProps) => <IconSparkles size={size} style={style} className={className} />
+export const FilterIcon    = ({ size = 18, style, className }: IconProps) => <IconAdjustments size={size} style={style} className={className} />
+export const ArrowLeftIcon = ({ size = 18, style, className }: IconProps) => <IconArrowLeft size={size} style={style} className={className} />
+export const PlusIcon      = ({ size = 18, style, className }: IconProps) => <IconPlus size={size} style={style} className={className} />
+export const ListIcon      = ({ size = 18, style, className }: IconProps) => <IconList size={size} style={style} className={className} />
+export const GlobeIcon     = ({ size = 18, style, className }: IconProps) => <IconWorld size={size} style={style} className={className} />
+export const LockIcon      = ({ size = 18, style, className }: IconProps) => <IconLock size={size} style={style} className={className} />
+export const TrashIcon     = ({ size = 18, style, className }: IconProps) => <IconTrash size={size} style={style} className={className} />
+export const EditIcon      = ({ size = 18, style, className }: IconProps) => <IconPencil size={size} style={style} className={className} />
+export const CheckIcon     = ({ size = 18, style, className }: IconProps) => <IconCheck size={size} style={style} className={className} />
 
-export const SearchIcon = (p: IconProps) => (
-  <Icon {...p}>
-    <circle cx="11" cy="11" r="7" />
-    <path d="M21 21l-4-4" />
-  </Icon>
+export const MetacriticIcon = ({ size = 18, style, className }: IconProps) => (
+  <svg role="img" viewBox="0 0 24 24" width={size} height={size} fill="currentColor" style={style} className={className}>
+    <path d="M11.99 0A12 12 0 1 0 24 12v-0.014A12 12 0 0 0 11.99 0Zm-0.055 2.564a9.399 9.399 0 0 1 9.407 9.389v0.01a9.399 9.399 0 1 1 -9.408 -9.399Zm-1.61 17.198 2.046 -2.046 -3.94 -3.94c-0.165 -0.166 -0.345 -0.373 -0.442 -0.608 -0.221 -0.47 -0.318 -1.203 0.221 -1.742 0.664 -0.664 1.548 -0.387 2.406 0.47l3.788 3.788 2.046 -2.046 -3.954 -3.954a2.48 2.48 0 0 1 -0.456 -0.622c-0.263 -0.539 -0.25 -1.216 0.235 -1.7 0.677 -0.678 1.562 -0.429 2.544 0.553l3.677 3.677 2.046 -2.046 -3.982 -3.982c-2.018 -2.018 -3.912 -1.949 -5.212 -0.65 -0.498 0.499 -0.802 1.024 -0.954 1.618a4.026 4.026 0 0 0 -0.055 1.686l-0.027 0.028c-0.996 -0.414 -2.13 -0.166 -3 0.705 -1.162 1.161 -1.12 2.392 -0.982 3.11l-0.042 0.043 -1.009 -0.816 -1.77 1.77a64.1 64.1 0 0 1 2.213 2.1z" />
+  </svg>
 )
-export const HeartIcon = (p: IconProps) => (
-  <Icon
-    {...p}
-    d="M12 20s-7-4.5-9.5-9C1 8 2.5 4.5 6 4.5c2.2 0 3.4 1.5 4 2.5.6-1 1.8-2.5 4-2.5 3.5 0 5 3.5 3.5 6.5C19 15.5 12 20 12 20z"
-  />
-)
-export const PlayIcon = (p: IconProps) => <Icon {...p} fill d="M8 5v14l11-7z" />
-export const PlusIcon = (p: IconProps) => (
-  <Icon {...p}>
-    <path d="M12 5v14M5 12h14" />
-  </Icon>
-)
-export const CheckIcon = (p: IconProps) => (
-  <Icon {...p}>
-    <path d="M5 12l5 5L20 6" />
-  </Icon>
-)
-export const StarIcon = (p: IconProps) => (
-  <Icon
-    {...p}
-    d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.9 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"
-  />
-)
-export const ListIcon = (p: IconProps) => (
-  <Icon {...p}>
-    <path d="M4 6h16M4 12h16M4 18h10" />
-  </Icon>
-)
-export const ChevronIcon = (p: IconProps) => (
-  <Icon {...p}>
-    <path d="M9 6l6 6-6 6" />
-  </Icon>
-)
-export const XIcon = (p: IconProps) => (
-  <Icon {...p}>
-    <path d="M6 6l12 12M18 6L6 18" />
-  </Icon>
-)
-export const GlobeIcon = (p: IconProps) => (
-  <Icon {...p}>
-    <circle cx="12" cy="12" r="9" />
-    <path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18" />
-  </Icon>
-)
-export const LockIcon = (p: IconProps) => (
-  <Icon {...p}>
-    <rect x="5" y="11" width="14" height="9" rx="2" />
-    <path d="M8 11V8a4 4 0 018 0v3" />
-  </Icon>
-)
-export const TrashIcon = (p: IconProps) => (
-  <Icon {...p}>
-    <path d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2M6 7l1 13a1 1 0 001 1h8a1 1 0 001-1l1-13" />
-  </Icon>
-)
-export const EditIcon = (p: IconProps) => (
-  <Icon {...p}>
-    <path d="M4 20h4L19 9l-4-4L4 16v4z" />
-  </Icon>
-)
-export const FilterIcon = (p: IconProps) => (
-  <Icon {...p}>
-    <path d="M3 5h18l-7 8v6l-4 2v-8z" />
-  </Icon>
-)
-export const SparkleIcon = (p: IconProps) => (
-  <Icon {...p} fill d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" />
-)
-export const ClockIcon = (p: IconProps) => (
-  <Icon {...p}>
-    <circle cx="12" cy="12" r="9" />
-    <path d="M12 7v5l3 2" />
-  </Icon>
-)
-export const FireIcon = (p: IconProps) => (
-  <Icon
-    {...p}
-    d="M12 3c1 3-2 4-2 7 0-1.5-1-2.5-1-2.5C7 9 7 11 7 13a5 5 0 0010 0c0-3-2-4-3-7-1 2-2 2-2 0z"
-  />
-)
-export const ArrowLeftIcon = (p: IconProps) => (
-  <Icon {...p}>
-    <path d="M15 6l-6 6 6 6" />
-  </Icon>
-)
+
+export const HeartIcon = ({ size = 18, fill = false, style, className }: IconProps) =>
+  fill
+    ? <IconHeartFilled size={size} style={style} className={className} />
+    : <IconHeart size={size} style={style} className={className} />
+
+export const StarIcon = ({ size = 18, fill = false, style, className }: IconProps) =>
+  fill
+    ? <IconStarFilled size={size} style={style} className={className} />
+    : <IconStar size={size} style={style} className={className} />

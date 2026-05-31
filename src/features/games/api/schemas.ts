@@ -22,6 +22,7 @@ export const GameSchema = z.object({
   name: z.string(),
   released: z.string().nullable(),
   background_image: z.string().nullable(),
+  background_image_additional: z.string().optional(),
   rating: z.number(),
   rating_top: z.number(),
   ratings: z.array(RatingSchema),

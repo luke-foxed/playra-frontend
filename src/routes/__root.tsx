@@ -22,7 +22,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <MantineProvider theme={theme} defaultColorScheme="dark">
+        <MantineProvider theme={theme} defaultColorScheme="dark" withGlobalClasses>
           <Notifications position="bottom-center" />
           <AppShell header={{ height: 68 }} padding={0}>
             <AppShell.Header

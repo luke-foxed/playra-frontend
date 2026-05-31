@@ -1,33 +1,49 @@
-import { Box } from '@mantine/core'
+import { Box, useMantineTheme } from '@mantine/core'
+import { MetacriticIcon } from './icons'
 
 type Props = { score: number | null; size?: number }
 
 export default function MetacriticBadge({ score, size = 40 }: Props) {
-  const base: React.CSSProperties = {
-    display: 'inline-grid',
-    placeItems: 'center',
-    width: size,
-    height: size,
-    borderRadius: 9,
-    fontFamily: 'var(--mantine-font-family-monospace)',
-    fontWeight: 600,
-    fontSize: size * 0.38,
+  const { other: { metascore } } = useMantineTheme()
+
+  const pill = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: Math.round(size * 0.2),
+    padding: `${Math.round(size * 0.18)}px ${Math.round(size * 0.28)}px`,
+    borderRadius: 999,
     flexShrink: 0,
+    fontSize: size * 0.36,
+    fontWeight: 600,
+    fontFamily: 'var(--mantine-font-family-monospace)',
+    backdropFilter: 'blur(6px)',
+    WebkitBackdropFilter: 'blur(6px)',
   }
 
   if (score == null) {
     return (
-      <Box style={{ ...base, background: 'var(--mantine-color-dark-5)', color: 'var(--mantine-color-dark-2)', fontSize: 11 }}>
+      <Box style={{
+        ...pill,
+        background: 'rgba(10,15,31,0.55)',
+        border: '1px solid rgba(255,255,255,0.12)',
+        color: 'var(--mantine-color-dark-2)',
+      }}>
+        <MetacriticIcon size={Math.round(size * 0.42)} />
         TBD
       </Box>
     )
   }
 
-  const bg = score >= 88 ? '#7FE6B9' : score >= 70 ? '#F0C36B' : '#FF6B7E'
-  const color = score >= 88 ? '#06210f' : score >= 70 ? '#2a1c00' : '#2a0008'
+  const { bg } = score >= 88 ? metascore.great : score >= 70 ? metascore.ok : metascore.poor
 
   return (
-    <Box style={{ ...base, background: bg, color }}>
+    <Box style={{
+      ...pill,
+      background: `color-mix(in oklab, ${bg} 22%, rgba(10,15,31,0.72))`,
+      border: `1px solid color-mix(in oklab, ${bg} 50%, transparent)`,
+      color: bg,
+    }}>
+      <MetacriticIcon size={Math.round(size * 0.42)} />
       {score}
     </Box>
   )

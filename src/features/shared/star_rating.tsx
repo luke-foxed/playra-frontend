@@ -1,4 +1,5 @@
-import { Rating } from '@mantine/core'
+import { Rating, Tooltip } from '@mantine/core'
+import { useState } from 'react'
 
 type Props = {
   value: number
@@ -7,15 +8,21 @@ type Props = {
   readonly?: boolean
 }
 
-export default function StarRating({ value, onChange, size = 26, readonly = false }: Props) {
-  const mantineSize = size <= 16 ? 'xs' : size <= 20 ? 'sm' : size <= 26 ? 'md' : size <= 34 ? 'lg' : 'xl'
+export default function StarRating({ value, onChange, size = 24, readonly = false }: Props) {
+  const [tooltipValue, setTooltipValue] = useState(0)
+
   return (
-    <Rating
-      value={value}
-      onChange={readonly ? undefined : onChange}
-      readOnly={readonly}
-      size={mantineSize}
-      color="yellow"
-    />
+    <Tooltip bg='dark' color='white' fw="bold" label={`${tooltipValue}/10`} withArrow>
+      <Rating
+        fractions={2}
+        count={10}
+        value={value}
+        onChange={readonly ? undefined : onChange}
+        readOnly={readonly}
+        size={size}
+        onHover={(v) => setTooltipValue(v)}
+        color='yellow'
+      />
+    </Tooltip>
   )
 }

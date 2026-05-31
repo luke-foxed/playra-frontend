@@ -23,7 +23,7 @@ export const Route = createFileRoute('/')({
     ])
   },
   pendingComponent: () => (
-    <Container size={1240} py="xl">
+    <Container size={1440} py="xl">
       <Text c="dark.2">Loading…</Text>
     </Container>
   ),
@@ -60,7 +60,7 @@ function RouteComponent() {
   const goGames = () => navigate({ to: '/games', search: { page: 1, page_size: 20 } })
 
   return (
-    <Container size={1240} px="xl" pb="xl">
+    <Container size={1440} px="xl" pb="xl">
       {/* HERO */}
       {featured && (
         <Box
@@ -120,8 +120,8 @@ function RouteComponent() {
         <SectionHead title="Popular right now" icon={<FireIcon size={20} />} onSee={goGames} />
         <div className="scroll-rail">
           {popular.map((g) => (
-            <Box key={g.id} style={{ width: 172 }}>
-              <GameCard id={g.id} name={g.name} imageUrl={g.background_image} metacritic={g.metacritic} released={g.released} genres={g.genres.map((x) => x.name)} />
+            <Box key={g.id} style={{ width: 200 }}>
+              <GameCard id={g.id} name={g.name} imageUrl={g.background_image} metacritic={g.metacritic} released={g.released} genres={g.genres.map((x) => x.name)} platforms={g.platforms.map((x) => x.platform.slug)} rating={g.rating} />
             </Box>
           ))}
         </div>
@@ -130,9 +130,9 @@ function RouteComponent() {
       {/* NEW RELEASES */}
       <Box mt={44}>
         <SectionHead title="New releases" icon={<SparkleIcon size={18} />} onSee={goGames} />
-        <SimpleGrid cols={{ base: 2, xs: 3, sm: 4, md: 5, lg: 6 }} spacing="md">
+        <SimpleGrid cols={{ base: 2, xs: 3, sm: 4, md: 4, lg: 5 }} spacing="md">
           {fresh.map((g) => (
-            <GameCard key={g.id} id={g.id} name={g.name} imageUrl={g.background_image} metacritic={g.metacritic} released={g.released} genres={g.genres.map((x) => x.name)} />
+            <GameCard key={g.id} id={g.id} name={g.name} imageUrl={g.background_image} metacritic={g.metacritic} released={g.released} genres={g.genres.map((x) => x.name)} platforms={g.platforms.map((x) => x.platform.slug)} rating={g.rating} />
           ))}
         </SimpleGrid>
       </Box>

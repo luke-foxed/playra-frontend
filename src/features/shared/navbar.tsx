@@ -38,7 +38,7 @@ export default function Navbar() {
   const isActive = (path: string) =>
     path === '/' ? location === '/' : location.startsWith(path)
 
-  const navLink = (path: string): React.CSSProperties => ({
+  const navLink = (path: string) => ({
     padding: '8px 14px', borderRadius: 999, fontSize: 14, fontWeight: 500,
     color: isActive(path) ? 'var(--mantine-color-dark-0)' : 'var(--mantine-color-dark-1)',
     background: isActive(path) ? 'var(--mantine-color-dark-5)' : 'transparent',
@@ -47,7 +47,7 @@ export default function Navbar() {
 
   return (
     <>
-      <Group px="xl" h="100%" justify="space-between" maw={1240} mx="auto" wrap="nowrap" gap="lg">
+      <Group px="xl" h="100%" justify="space-between" maw={1440} mx="auto" wrap="nowrap" gap="lg">
         <UnstyledButton
           component={LinkCast}
           to="/"

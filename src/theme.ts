@@ -1,6 +1,16 @@
 import { createTheme } from '@mantine/core'
 import type { MantineColorsTuple } from '@mantine/core'
 
+declare module '@mantine/core' {
+  interface MantineThemeOther {
+    metascore: {
+      great: { bg: string; color: string }
+      ok:    { bg: string; color: string }
+      poor:  { bg: string; color: string }
+    }
+  }
+}
+
 const violet: MantineColorsTuple = [
   '#F0ECFF', '#D9D0FF', '#C2B5FF', '#AB99FF',
   '#B098FF',  // 4 — lighter violet
@@ -65,6 +75,14 @@ export const theme = createTheme({
       h1: { fontSize: '44px', lineHeight: '1.02', fontWeight: '800' },
       h2: { fontSize: '24px', lineHeight: '1.2', fontWeight: '700' },
       h3: { fontSize: '19px', lineHeight: '1.3', fontWeight: '700' },
+    },
+  },
+
+  other: {
+    metascore: {
+      great: { bg: '#7FE6B9', color: '#06210f' },
+      ok:    { bg: '#F0C36B', color: '#2a1c00' },
+      poor:  { bg: '#FF6B7E', color: '#2a0008' },
     },
   },
 
