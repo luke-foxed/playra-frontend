@@ -10,4 +10,13 @@ export default defineConfig({
     react(),
     babel({ presets: [reactCompilerPreset()] })
   ],
+  build: {
+    rolldownOptions: {
+      output: {
+        manualChunks: (id) => {
+          if (id.includes('node_modules/axios')) return 'vendor'
+        },
+      },
+    },
+  },
 })
