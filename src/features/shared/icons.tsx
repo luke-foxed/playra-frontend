@@ -19,9 +19,10 @@ import {
   IconTrash,
   IconPencil,
   IconCheck,
+  IconDeviceGamepad2,
 } from '@tabler/icons-react'
 
-type IconProps = { size?: number; fill?: boolean; style?: React.CSSProperties; className?: string }
+type IconProps = { size?: number; fill?: boolean; stroke?: number; style?: React.CSSProperties; className?: string }
 
 export const SearchIcon    = ({ size = 18, style, className }: IconProps) => <IconSearch size={size} style={style} className={className} />
 export const XIcon         = ({ size = 18, style, className }: IconProps) => <IconX size={size} style={style} className={className} />
@@ -39,6 +40,7 @@ export const LockIcon      = ({ size = 18, style, className }: IconProps) => <Ic
 export const TrashIcon     = ({ size = 18, style, className }: IconProps) => <IconTrash size={size} style={style} className={className} />
 export const EditIcon      = ({ size = 18, style, className }: IconProps) => <IconPencil size={size} style={style} className={className} />
 export const CheckIcon     = ({ size = 18, style, className }: IconProps) => <IconCheck size={size} style={style} className={className} />
+export const GamepadIcon   = ({ size = 18, style, className }: IconProps) => <IconDeviceGamepad2 size={size} style={style} className={className} />
 
 export const MetacriticIcon = ({ size = 18, style, className }: IconProps) => (
   <svg role="img" viewBox="0 0 24 24" width={size} height={size} fill="currentColor" style={style} className={className}>
@@ -46,10 +48,10 @@ export const MetacriticIcon = ({ size = 18, style, className }: IconProps) => (
   </svg>
 )
 
-export const HeartIcon = ({ size = 18, fill = false, style, className }: IconProps) =>
+export const HeartIcon = ({ size = 18, fill = false, stroke = 2, style, className }: IconProps) =>
   fill
     ? <IconHeartFilled size={size} style={style} className={className} />
-    : <IconHeart size={size} style={style} className={className} />
+    : <IconHeart size={size} stroke={stroke} style={style} className={className} />
 
 export const StarIcon = ({ size = 18, fill = false, style, className }: IconProps) =>
   fill

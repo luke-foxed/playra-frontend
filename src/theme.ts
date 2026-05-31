@@ -100,6 +100,40 @@ export const theme = createTheme({
     Badge: {
       defaultProps: { radius: 'xl' },
     },
+    Notification: {
+      styles: {
+        root: {
+          '--notification-radius': '16px',
+          background: '#080D1C',
+          border: '1px solid rgba(255,255,255,0.1)',
+          boxShadow: '0 24px 64px rgba(0,0,0,0.85), 0 8px 24px rgba(0,0,0,0.6)',
+          paddingTop: '15px',
+          paddingBottom: '15px',
+          paddingInlineEnd: '10px',
+          alignItems: 'flex-start',
+          minWidth: 300,
+          maxWidth: 400,
+        },
+        title: {
+          fontWeight: 700,
+          fontSize: '14px',
+          letterSpacing: '-0.3px',
+          lineHeight: '1.3',
+          marginBottom: '3px',
+        },
+        description: {
+          fontSize: '13px',
+          color: '#8B8EB8',
+          lineHeight: '1.45',
+        },
+        closeButton: {
+          color: '#6B6E97',
+          marginTop: '1px',
+          width: 24,
+          height: 24,
+        },
+      },
+    },
     Modal: {
       defaultProps: {
         radius: 'lg',

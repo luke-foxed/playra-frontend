@@ -24,11 +24,11 @@ export default function useRateGame(gameId: number, playlist: List | undefined) 
     },
     onSuccess: () => {
       qc.invalidateQueries(userGameQueryOptions(gameId))
-      notifications.show({ message: "Score saved", color: "blue" })
+      notifications.show({ title: "Rating saved", message: "Your score has been recorded", color: "blue" })
     },
     onError: () => {
       qc.invalidateQueries(userGameQueryOptions(gameId))
-      notifications.show({ message: "Failed to save score", color: "red" })
+      notifications.show({ title: "Error", message: "Failed to save score", color: "red" })
     },
   })
   return { rateGame: mutateAsync, isLoading: isPending, isError }

@@ -16,6 +16,7 @@ import {
   EditIcon, PlusIcon, ListIcon, HeartIcon, PlayIcon,
   GlobeIcon, LockIcon, XIcon, TrashIcon, ArrowLeftIcon, SearchIcon,
 } from '../../features/shared/icons'
+import PlayraLoader from '../../features/shared/playra_loader'
 
 export const Route = createFileRoute('/profile/$id')({
   component: RouteComponent,
@@ -25,7 +26,7 @@ export const Route = createFileRoute('/profile/$id')({
       queryClient.ensureQueryData(profileQueryOptions(params.id)),
       queryClient.ensureQueryData(listsQueryOptions()),
     ]),
-  pendingComponent: () => <Container size={1240} py="xl"><Text c="dark.2">Loading…</Text></Container>,
+  pendingComponent: () => <PlayraLoader />
 })
 
 function avatarColor(str: string) {

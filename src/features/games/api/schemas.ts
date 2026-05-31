@@ -22,14 +22,14 @@ export const GameSchema = z.object({
   name: z.string(),
   released: z.string().nullable(),
   background_image: z.string().nullable(),
-  background_image_additional: z.string().optional(),
+  background_image_additional: z.string().nullable().optional(),
   rating: z.number(),
   rating_top: z.number(),
-  ratings: z.array(RatingSchema),
+  ratings: z.array(RatingSchema).catch([]),
   ratings_count: z.number(),
   metacritic: z.number().nullable(),
-  genres: z.array(GenreSchema),
-  platforms: z.array(PlatformSchema),
+  genres: z.array(GenreSchema).catch([]),
+  platforms: z.array(PlatformSchema).catch([]),
   short_screenshots: z.array(ScreenshotSchema).optional(),
 })
 

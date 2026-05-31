@@ -9,9 +9,9 @@ export default function useCreateList(profileUserId: string) {
     mutationFn: (input: CreateListInput) => createList(input),
     onSuccess: (list) => {
       qc.invalidateQueries(listsQueryOptions(profileUserId))
-      notifications.show({ message: `"${list.name}" created`, color: "green" })
+      notifications.show({ title: "List created", message: `"${list.name}" is ready`, color: "green" })
     },
-    onError: () => notifications.show({ message: "Failed to create list", color: "red" }),
+    onError: () => notifications.show({ title: "Error", message: "Failed to create list", color: "red" }),
   })
   return { createList: mutateAsync, isLoading: isPending, isError }
 }

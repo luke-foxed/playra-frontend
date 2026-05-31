@@ -1,7 +1,9 @@
 import { Link } from '@tanstack/react-router'
-import { Box, AspectRatio, UnstyledButton, Group, Text } from '@mantine/core'
+import { Box, AspectRatio, UnstyledButton, Group, Text, Tooltip } from '@mantine/core'
+import { useState } from 'react'
 import MetacriticBadge from '../../shared/metacritic_badge'
 import { HeartIcon, ClockIcon, StarIcon } from '../../shared/icons'
+import useAddToWishlist from '../hooks/useAddToWishlist'
 
 const PLATFORM: Record<string, string> = {
   'playstation5': 'PS5',
@@ -49,6 +51,9 @@ export default function GameCard({
   id, name, imageUrl, metacritic, released, genres, platforms, rating,
   showWish = true, inWishlist = false, onWishToggle,
 }: Props) {
+  const [hovered, setHovered] = useState(false)
+  const { addToWishlist, isLoading: wishLoading } = useAddToWishlist(id)
+
   const year = released?.slice(0, 4)
   const isUpcoming = released ? released > new Date().toISOString().slice(0, 10) : false
 
@@ -69,76 +74,82 @@ export default function GameCard({
     flexShrink: 0,
   }
 
+  const handleWishClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    if (onWishToggle) {
+      onWishToggle(e)
+    } else {
+      addToWishlist({ game_id: id, name, released: released ?? null, metacritic: metacritic ?? null, background_image: imageUrl })
+    }
+  }
+
+  const wishVisible = hovered || inWishlist
+
   return (
     <Link to='/games/$id' params={{ id: String(id) }} style={{ textDecoration: "none", display: "block" }}>
       <Box
         bg='dark.6'
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
         style={{
           borderRadius: "var(--mantine-radius-md)",
           overflow: "hidden",
           cursor: "pointer",
-          boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.07)",
+          boxShadow: hovered
+            ? "inset 0 0 0 1px rgba(139,107,255,0.35), 0 12px 32px -8px rgba(0,0,0,.6)"
+            : "inset 0 0 0 1px rgba(255,255,255,0.07)",
+          transform: hovered ? "translateY(-3px)" : "none",
           transition: "transform 0.18s ease, box-shadow 0.18s ease",
         }}>
         <AspectRatio ratio={3 / 4}>
           <Box style={{ ...coverBg, position: "relative", overflow: "hidden" }}>
-            <Box
-              style={{
-                position: "absolute",
-                inset: 0,
-                background: "repeating-linear-gradient(0deg, transparent 0 3px, rgba(0,0,0,.05) 3px 4px)",
-              }}
-            />
-            <Box
-              style={{
-                position: "absolute",
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: "35%",
-                background: "linear-gradient(to top, rgba(10,15,31,.5), transparent)",
-              }}
-            />
+            {/* Scanline texture */}
+            <Box style={{ position: "absolute", inset: 0, background: "repeating-linear-gradient(0deg, transparent 0 3px, rgba(0,0,0,.05) 3px 4px)" }} />
+            {/* Hover gradients — top + bottom */}
+            <Box style={{ position: "absolute", top: 0, left: 0, right: 0, height: "46%", background: "linear-gradient(to bottom, rgba(10,15,31,.62), transparent)", opacity: hovered ? 1 : 0, transition: "opacity 0.18s" }} />
+            <Box style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "35%", background: "linear-gradient(to top, rgba(10,15,31,.55), transparent)", opacity: hovered ? 1 : 0, transition: "opacity 0.18s" }} />
+            {/* Vignette — dark edges on hover */}
+            <Box style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.55) 100%)", opacity: hovered ? 1 : 0, transition: "opacity 0.22s" }} />
 
             {isUpcoming ? (
               <Box pos='absolute' top={10} left={10}>
-                <Box
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 5,
-                    background: "color-mix(in oklab, #7CC8E3 16%, rgba(10,15,31,.6))",
-                    backdropFilter: "blur(6px)",
-                    color: "#7CC8E3",
-                    borderRadius: 999,
-                    padding: "5px 11px",
-                    fontSize: 12,
-                    fontWeight: 500,
-                  }}>
+                <Box style={{
+                  display: "inline-flex", alignItems: "center", gap: 5,
+                  background: "color-mix(in oklab, #7CC8E3 16%, rgba(10,15,31,.6))",
+                  backdropFilter: "blur(6px)", color: "#7CC8E3",
+                  borderRadius: 999, padding: "5px 11px", fontSize: 12, fontWeight: 500,
+                }}>
                   <ClockIcon size={12} /> {year}
                 </Box>
               </Box>
             ) : (
               showWish && (
-                <UnstyledButton
-                  pos='absolute'
-                  top={10}
-                  left={10}
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: "50%",
-                    background: inWishlist ? "color-mix(in oklab, #F498C8 24%, rgba(10,15,31,.6))" : "rgba(10,15,31,.55)",
-                    backdropFilter: "blur(6px)",
-                    display: "grid",
-                    placeItems: "center",
-                    color: inWishlist ? "#F498C8" : "var(--mantine-color-dark-1)",
-                    opacity: inWishlist ? 1 : 0,
-                    transition: "opacity 0.15s",
-                  }}
-                  onClick={onWishToggle}>
-                  <HeartIcon size={16} fill={inWishlist} />
-                </UnstyledButton>
+                <Tooltip label={inWishlist ? "In wishlist" : "Add to wishlist"} position="bottom" withArrow offset={6}>
+                  <UnstyledButton
+                    pos='absolute'
+                    top={10}
+                    left={10}
+                    disabled={wishLoading}
+                    className={wishLoading ? "wish-loading" : undefined}
+                    style={{
+                      width: 30,
+                      height: 30,
+                      borderRadius: "50%",
+                      background: inWishlist ? "rgba(244,152,200,0.82)" : "rgba(244,152,200,0.18)",
+                      border: "1.5px solid rgba(244,152,200,0.75)",
+                      display: "grid",
+                      placeItems: "center",
+                      color: "#F498C8",
+                      opacity: wishVisible ? 1 : 0,
+                      transform: wishVisible ? "scale(1)" : "scale(0.75)",
+                      transition: "opacity 0.15s, transform 0.15s, background 0.15s",
+                      boxShadow: inWishlist ? "0 0 10px rgba(244,152,200,0.45)" : "none",
+                      filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.7))",
+                    }}
+                    onClick={handleWishClick}>
+                    <HeartIcon size={15} fill={false} stroke={2.5} />
+                  </UnstyledButton>
+                </Tooltip>
               )
             )}
 
@@ -151,15 +162,9 @@ export default function GameCard({
         </AspectRatio>
 
         <Box px={12} py={10}>
-          {genres && genres.length > 0 ? (
-            <Text fz={10} tt='uppercase' c='dark.3' fw={700} style={{ letterSpacing: 1.4 }} lineClamp={1}>
-              {genres[0]}
-            </Text>
-          ) : (
-            <Text fz={10} tt='uppercase' c='dark.3' fw={700} style={{ letterSpacing: 1.4 }} lineClamp={1}>
-              -
-            </Text>
-          )}
+          <Text fz={10} tt='uppercase' c='dark.3' fw={700} style={{ letterSpacing: 1.4 }} lineClamp={1}>
+            {genres?.[0] ?? "-"}
+          </Text>
           <Text fw={700} fz={13} c='dark.0' mt={2} lineClamp={1} style={{ lineHeight: 1.2, letterSpacing: -0.2 }}>
             {name}
           </Text>
@@ -171,18 +176,12 @@ export default function GameCard({
                 </Box>
               ))}
               {overflow > 0 && <Box style={{ ...platformPill, color: "var(--mantine-color-dark-2)" }}>+{overflow}</Box>}
-              {!shown.length && year && (
-                <Text fz={11} c='dark.3' ff='monospace'>
-                  {year}
-                </Text>
-              )}
+              {!shown.length && year && <Text fz={11} c='dark.3' ff='monospace'>{year}</Text>}
             </Group>
-            {rating != null && rating > 0 && (
+            {rating != null && rating > 0 && !isUpcoming && (
               <Group gap={3} wrap='nowrap' style={{ flexShrink: 0 }}>
                 <StarIcon size={11} fill style={{ color: "#F0C36B" }} />
-                <Text fz={11} fw={600} ff='monospace' c='dark.1'>
-                  {(rating * 2).toFixed(1)}
-                </Text>
+                <Text fz={11} fw={600} ff='monospace' c='dark.1'>{(rating * 2).toFixed(1)}</Text>
               </Group>
             )}
           </Group>

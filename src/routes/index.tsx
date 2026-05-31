@@ -2,14 +2,13 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { Box, Group, Text, Title, SimpleGrid, Button, Stack, Anchor, Container } from '@mantine/core'
 import routeProtector from '../lib/route_protector'
-import { gamesQueryOptions } from '../features/games/api/games'
+import { gamesQueryOptions, popularGamesQueryOptions, recentGamesQueryOptions } from '../features/games/api/games'
 import type { Game } from '../features/games/api/schemas'
 import GameCard from '../features/games/components/game_card'
 import MetacriticBadge from '../features/shared/metacritic_badge'
-import { PlayIcon, HeartIcon, FireIcon, SparkleIcon, StarIcon, ChevronIcon } from '../features/shared/icons'
+import { PlayIcon, HeartIcon, FireIcon, SparkleIcon, StarIcon, ChevronIcon, GamepadIcon } from '../features/shared/icons'
+import PlayraLoader from '../features/shared/playra_loader'
 
-const POPULAR = { page: 1, page_size: 10, ordering: '-rating' as const }
-const NEW_RELEASES = { page: 1, page_size: 8, ordering: '-released' as const }
 const TOP = { page: 1, page_size: 8, ordering: '-metacritic' as const }
 
 export const Route = createFileRoute('/')({
@@ -17,16 +16,12 @@ export const Route = createFileRoute('/')({
   beforeLoad: routeProtector,
   loader: async ({ context: { queryClient } }) => {
     await Promise.all([
-      queryClient.ensureQueryData(gamesQueryOptions(POPULAR)),
-      queryClient.ensureQueryData(gamesQueryOptions(NEW_RELEASES)),
+      queryClient.ensureQueryData(popularGamesQueryOptions(10)),
+      queryClient.ensureQueryData(recentGamesQueryOptions(8)),
       queryClient.ensureQueryData(gamesQueryOptions(TOP)),
     ])
   },
-  pendingComponent: () => (
-    <Container size={1440} py="xl">
-      <Text c="dark.2">Loading…</Text>
-    </Container>
-  ),
+  pendingComponent: () => <PlayraLoader />
 })
 
 function SectionHead({ title, icon, onSee }: { title: string; icon: React.ReactNode; onSee?: () => void }) {
@@ -48,14 +43,14 @@ function SectionHead({ title, icon, onSee }: { title: string; icon: React.ReactN
 
 function RouteComponent() {
   const navigate = useNavigate()
-  const { data: popularData } = useSuspenseQuery(gamesQueryOptions(POPULAR))
-  const { data: newData } = useSuspenseQuery(gamesQueryOptions(NEW_RELEASES))
+  const { data: popularData } = useSuspenseQuery(popularGamesQueryOptions(10))
+  const { data: recentData } = useSuspenseQuery(recentGamesQueryOptions(8))
   const { data: topData } = useSuspenseQuery(gamesQueryOptions(TOP))
 
   const popular = popularData.results
-  const fresh = newData.results
+  const fresh = recentData.results
   const topRated = topData.results.filter((g) => g.metacritic != null)
-  const featured: Game | undefined = topRated[0] ?? popular[0]
+  const featured: Game | undefined = fresh[0]
 
   const goGames = () => navigate({ to: '/games', search: { page: 1, page_size: 20 } })
 
@@ -159,13 +154,17 @@ function RouteComponent() {
               <Box
                 style={{
                   width: 56, height: 56, borderRadius: 9,
-                  backgroundImage: g.background_image ? `url(${g.background_image})` : undefined,
+                  backgroundColor: 'var(--mantine-color-dark-5)',
+                  backgroundImage: g.background_image ? `url(${g.background_image})` : 'none',
                   backgroundSize: 'cover', backgroundPosition: 'center',
-                  background: g.background_image ? undefined : 'var(--mantine-color-dark-5)',
                   boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)',
                   flexShrink: 0,
+                  display: 'grid', placeItems: 'center',
+                  color: 'var(--mantine-color-dark-3)',
                 }}
-              />
+              >
+                {!g.background_image && <GamepadIcon size={24} />}
+              </Box>
               <Box>
                 <Text fw={600} fz={15} style={{ letterSpacing: -0.3 }}>{g.name}</Text>
                 <Text fz="xs" c="dark.2" mt={2}>{g.released?.slice(0, 4)}</Text>

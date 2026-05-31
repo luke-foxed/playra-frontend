@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { createFileRoute, useRouter } from "@tanstack/react-router"
 import { useState } from "react"
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query"
 import {
@@ -25,9 +25,10 @@ import routeProtector from "../../lib/route_protector"
 import MetacriticBadge from "../../features/shared/metacritic_badge"
 import StarRating from "../../features/shared/star_rating"
 import GameCard from "../../features/games/components/game_card"
-import { ArrowLeftIcon, HeartIcon, PlusIcon, SparkleIcon, ListIcon, GlobeIcon, LockIcon } from "../../features/shared/icons"
+import { ArrowLeftIcon, HeartIcon, PlusIcon, SparkleIcon, ListIcon, GlobeIcon, LockIcon, GamepadIcon } from "../../features/shared/icons"
 import useWishlistToggle from "../../features/lists/hooks/useWishlistToggle"
 import useRateGame from "../../features/lists/hooks/useRateGame"
+import PlayraLoader from "../../features/shared/playra_loader"
 
 export const Route = createFileRoute("/games/$id")({
   component: RouteComponent,
@@ -40,16 +41,12 @@ export const Route = createFileRoute("/games/$id")({
       queryClient.ensureQueryData(listsQueryOptions()),
     ])
   },
-  pendingComponent: () => (
-    <Container size={1440} py="xl">
-      <Text c="dark.2">Loading…</Text>
-    </Container>
-  ),
+  pendingComponent: () => <PlayraLoader />
 })
 
 function RouteComponent() {
   const params = Route.useParams()
-  const navigate = useNavigate()
+  const router = useRouter()
   const id = Number(params.id)
   const qc = useQueryClient()
 
@@ -84,13 +81,12 @@ function RouteComponent() {
   const { rateGame, isLoading: ratingLoading } = useRateGame(id, playlist)
   const [showLists, setShowLists] = useState(false)
 
-  const coverImage = game?.background_image || "https://placehold.co/600x900/0A0F1F/E2E8F0?text=No+Cover+Art+Found"
-  const topCoverImage = game.background_image_additional || coverImage
+  const topCoverImage = game.background_image_additional || game.background_image
 
   return (
     <Box>
       <Box style={{ position: "relative", height: 340 }}>
-        <BackgroundImage src={topCoverImage} pos="absolute" inset="0">
+        <BackgroundImage src={topCoverImage ?? ''} pos="absolute" inset="0">
           <Box
             pos="absolute"
             inset="0"
@@ -102,7 +98,7 @@ function RouteComponent() {
       <Container size={1440} px="xl">
         <Anchor
           component="button"
-          onClick={() => navigate({ to: "/games", search: { page: 1, page_size: 20 } })}
+          onClick={() => router.history.back()}
           style={{
             display: "inline-flex",
             alignItems: "center",
@@ -126,12 +122,27 @@ function RouteComponent() {
           {/* Cover */}
 
           <Grid.Col span={3.5}>
-            <BackgroundImage
-              src={coverImage}
-              style={{ aspectRatio: "3/4", boxShadow: "0 24px 60px -20px rgba(0,0,0,.8), inset 0 0 0 1px rgba(255,255,255,0.14)" }}
-              bdrs="lg">
-              <Box pos="absolute" inset={0} bg="repeating-linear-gradient(0deg, transparent 0 3px, rgba(0,0,0,.05) 3px 4px)" />
-            </BackgroundImage>
+            {game.background_image ? (
+              <BackgroundImage
+                src={game.background_image}
+                style={{ aspectRatio: "3/4", boxShadow: "0 24px 60px -20px rgba(0,0,0,.8), inset 0 0 0 1px rgba(255,255,255,0.14)" }}
+                bdrs="lg">
+                <Box pos="absolute" inset={0} bg="repeating-linear-gradient(0deg, transparent 0 3px, rgba(0,0,0,.05) 3px 4px)" />
+              </BackgroundImage>
+            ) : (
+              <Box
+                style={{
+                  aspectRatio: "3/4",
+                  borderRadius: "var(--mantine-radius-lg)",
+                  background: "linear-gradient(160deg, var(--mantine-color-dark-5) 0%, var(--mantine-color-dark-7) 120%)",
+                  boxShadow: "0 24px 60px -20px rgba(0,0,0,.8), inset 0 0 0 1px rgba(255,255,255,0.10)",
+                  display: "grid", placeItems: "center",
+                  color: "var(--mantine-color-dark-3)",
+                }}
+              >
+                <GamepadIcon size={64} />
+              </Box>
+            )}
           </Grid.Col>
 
           <Grid.Col span={8.5}>

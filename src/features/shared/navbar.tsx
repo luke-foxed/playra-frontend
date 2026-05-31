@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from 'react'
-import { Link, useRouterState } from '@tanstack/react-router'
+import { Link, useRouterState, useNavigate } from '@tanstack/react-router'
 import { Group, Text, Button, UnstyledButton, Avatar, Box } from '@mantine/core'
 import { AuthContext } from '../auth/providers/auth_provider'
 import supabase from '../../lib/supabase_client'
@@ -20,6 +20,7 @@ export default function Navbar() {
   const { profile } = useContext(AuthContext)
   const [searchOpen, setSearchOpen] = useState(false)
   const location = useRouterState({ select: (s) => s.location.pathname })
+  const navigate = useNavigate()
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -59,9 +60,9 @@ export default function Navbar() {
 
         {profile && (
           <Group gap={6} style={{ flexShrink: 0 }}>
-            <Link to="/" style={navLink('/')}>Home</Link>
-            <Link to="/games" search={{ page: 1, page_size: 20 }} style={navLink('/games')}>Games</Link>
-            <Link to="/profile/$id" params={{ id: profile.id }} style={navLink('/profile')}>Profile</Link>
+            <Link to="/" className="nav-link" style={navLink('/')}>Home</Link>
+            <Link to="/games" search={{ page: 1, page_size: 20 }} className="nav-link" style={navLink('/games')}>Games</Link>
+            <Link to="/profile/$id" params={{ id: profile.id }} className="nav-link" style={navLink('/profile')}>Profile</Link>
           </Group>
         )}
 
@@ -88,7 +89,7 @@ export default function Navbar() {
 
         {profile ? (
           <Group gap="xs" style={{ flexShrink: 0 }}>
-            <UnstyledButton component={LinkCast} to="/profile/$id" params={{ id: profile.id }}>
+            <UnstyledButton component={LinkCast} to="/profile/$id" params={{ id: profile.id }} className="avatar-btn">
               <Avatar
                 src={profile.avatar_url ?? undefined}
                 alt={profile.username ?? profile.email}
@@ -100,7 +101,7 @@ export default function Navbar() {
                 {!profile.avatar_url && ((profile?.username ?? profile.email)[0] ?? '?').toUpperCase()}
               </Avatar>
             </UnstyledButton>
-            <Button variant="subtle" color="gray" size="sm" onClick={() => supabase.auth.signOut()}>
+            <Button variant="subtle" color="gray" size="sm" onClick={async () => { await supabase.auth.signOut(); navigate({ to: '/login' }) }}>
               Sign out
             </Button>
           </Group>

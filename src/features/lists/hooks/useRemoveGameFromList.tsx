@@ -8,7 +8,7 @@ export default function useRemoveGameFromList(selectedListId: string | null) {
     mutationFn: ({ listId, gameId }: { listId: string; gameId: number }) =>
       removeGamesFromList(listId, [gameId]),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["list", selectedListId] }),
-    onError: () => notifications.show({ message: "Failed to remove game", color: "red" }),
+    onError: () => notifications.show({ title: "Error", message: "Failed to remove game", color: "red" }),
   })
   return { removeGame: mutateAsync, isLoading: isPending, isError }
 }

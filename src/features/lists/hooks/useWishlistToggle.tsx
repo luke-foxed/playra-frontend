@@ -20,11 +20,12 @@ export default function useWishlistToggle(gameId: number, wishlist: List | undef
     onSuccess: (_, { inWishlist, gamePayload }) => {
       qc.invalidateQueries(userGameQueryOptions(gameId))
       notifications.show({
-        message: inWishlist ? "Removed from wishlist" : `"${gamePayload.name}" added to wishlist`,
+        title: "Wishlist",
+        message: inWishlist ? "Removed from wishlist" : `"${gamePayload.name}" added`,
         color: "green",
       })
     },
-    onError: () => notifications.show({ message: "Failed to update wishlist", color: "red" }),
+    onError: () => notifications.show({ title: "Error", message: "Failed to update wishlist", color: "red" }),
   })
   return { toggleWishlist: mutateAsync, isLoading: isPending, isError }
 }
