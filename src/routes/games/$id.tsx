@@ -334,7 +334,7 @@ function RouteComponent() {
                   released={g.released}
                   genres={g.genres.map((x) => x.name)}
                   platforms={g.platforms.map((x) => x.platform.slug)}
-                  rating={g.rating}
+                  communityScore={g.playra_community_score}
                 />
               ))}
             </SimpleGrid>

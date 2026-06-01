@@ -52,6 +52,7 @@ export default function GameCard({
   id, name, imageUrl, metacritic, released, genres, platforms, communityScore,
   showWish = true, inWishlist = false, onWishToggle,
 }: Props) {
+  const displayScore = communityScore
   const [hovered, setHovered] = useState(false)
   const [badgeHovered, setBadgeHovered] = useState(false)
   const { addToWishlist, isLoading: addLoading } = useAddToWishlist(id)
@@ -216,9 +217,9 @@ export default function GameCard({
             </Group>
             {!isUpcoming && (
               <Group gap={3} wrap='nowrap' style={{ flexShrink: 0 }}>
-                <StarIcon size={11} fill={communityScore != null} style={{ color: communityScore != null ? "#F0C36B" : "var(--mantine-color-dark-4)" }} />
-                <Text fz={11} fw={600} ff='monospace' c={communityScore != null ? "dark.1" : "dark.4"}>
-                  {communityScore != null ? communityScore.toFixed(1) : "—"}
+                <StarIcon size={11} fill={displayScore != null} style={{ color: displayScore != null ? "#F0C36B" : "var(--mantine-color-dark-4)" }} />
+                <Text fz={11} fw={600} ff='monospace' c={displayScore != null ? "dark.1" : "dark.4"}>
+                  {displayScore != null ? displayScore.toFixed(1) : "—"}
                 </Text>
               </Group>
             )}

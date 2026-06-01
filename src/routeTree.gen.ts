@@ -16,6 +16,8 @@ import { Route as LoginIndexRouteImport } from './routes/login/index'
 import { Route as GamesIndexRouteImport } from './routes/games/index'
 import { Route as ProfileIdRouteImport } from './routes/profile/$id'
 import { Route as GamesIdRouteImport } from './routes/games/$id'
+import { Route as ProfileIdIndexRouteImport } from './routes/profile/$id/index'
+import { Route as ProfileIdListsListIdRouteImport } from './routes/profile/$id/lists/$listId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -52,34 +54,49 @@ const GamesIdRoute = GamesIdRouteImport.update({
   path: '/games/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfileIdIndexRoute = ProfileIdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ProfileIdRoute,
+} as any)
+const ProfileIdListsListIdRoute = ProfileIdListsListIdRouteImport.update({
+  id: '/lists/$listId',
+  path: '/lists/$listId',
+  getParentRoute: () => ProfileIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/games/$id': typeof GamesIdRoute
-  '/profile/$id': typeof ProfileIdRoute
+  '/profile/$id': typeof ProfileIdRouteWithChildren
   '/games/': typeof GamesIndexRoute
   '/login/': typeof LoginIndexRoute
   '/restricted/': typeof RestrictedIndexRoute
   '/signup/': typeof SignupIndexRoute
+  '/profile/$id/': typeof ProfileIdIndexRoute
+  '/profile/$id/lists/$listId': typeof ProfileIdListsListIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/games/$id': typeof GamesIdRoute
-  '/profile/$id': typeof ProfileIdRoute
   '/games': typeof GamesIndexRoute
   '/login': typeof LoginIndexRoute
   '/restricted': typeof RestrictedIndexRoute
   '/signup': typeof SignupIndexRoute
+  '/profile/$id': typeof ProfileIdIndexRoute
+  '/profile/$id/lists/$listId': typeof ProfileIdListsListIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/games/$id': typeof GamesIdRoute
-  '/profile/$id': typeof ProfileIdRoute
+  '/profile/$id': typeof ProfileIdRouteWithChildren
   '/games/': typeof GamesIndexRoute
   '/login/': typeof LoginIndexRoute
   '/restricted/': typeof RestrictedIndexRoute
   '/signup/': typeof SignupIndexRoute
+  '/profile/$id/': typeof ProfileIdIndexRoute
+  '/profile/$id/lists/$listId': typeof ProfileIdListsListIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,15 +108,18 @@ export interface FileRouteTypes {
     | '/login/'
     | '/restricted/'
     | '/signup/'
+    | '/profile/$id/'
+    | '/profile/$id/lists/$listId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/games/$id'
-    | '/profile/$id'
     | '/games'
     | '/login'
     | '/restricted'
     | '/signup'
+    | '/profile/$id'
+    | '/profile/$id/lists/$listId'
   id:
     | '__root__'
     | '/'
@@ -109,12 +129,14 @@ export interface FileRouteTypes {
     | '/login/'
     | '/restricted/'
     | '/signup/'
+    | '/profile/$id/'
+    | '/profile/$id/lists/$listId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   GamesIdRoute: typeof GamesIdRoute
-  ProfileIdRoute: typeof ProfileIdRoute
+  ProfileIdRoute: typeof ProfileIdRouteWithChildren
   GamesIndexRoute: typeof GamesIndexRoute
   LoginIndexRoute: typeof LoginIndexRoute
   RestrictedIndexRoute: typeof RestrictedIndexRoute
@@ -172,13 +194,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GamesIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profile/$id/': {
+      id: '/profile/$id/'
+      path: '/'
+      fullPath: '/profile/$id/'
+      preLoaderRoute: typeof ProfileIdIndexRouteImport
+      parentRoute: typeof ProfileIdRoute
+    }
+    '/profile/$id/lists/$listId': {
+      id: '/profile/$id/lists/$listId'
+      path: '/lists/$listId'
+      fullPath: '/profile/$id/lists/$listId'
+      preLoaderRoute: typeof ProfileIdListsListIdRouteImport
+      parentRoute: typeof ProfileIdRoute
+    }
   }
 }
+
+interface ProfileIdRouteChildren {
+  ProfileIdIndexRoute: typeof ProfileIdIndexRoute
+  ProfileIdListsListIdRoute: typeof ProfileIdListsListIdRoute
+}
+
+const ProfileIdRouteChildren: ProfileIdRouteChildren = {
+  ProfileIdIndexRoute: ProfileIdIndexRoute,
+  ProfileIdListsListIdRoute: ProfileIdListsListIdRoute,
+}
+
+const ProfileIdRouteWithChildren = ProfileIdRoute._addFileChildren(
+  ProfileIdRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GamesIdRoute: GamesIdRoute,
-  ProfileIdRoute: ProfileIdRoute,
+  ProfileIdRoute: ProfileIdRouteWithChildren,
   GamesIndexRoute: GamesIndexRoute,
   LoginIndexRoute: LoginIndexRoute,
   RestrictedIndexRoute: RestrictedIndexRoute,
