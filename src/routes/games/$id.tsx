@@ -92,7 +92,7 @@ function RouteComponent() {
   return (
     <Box>
       <Box style={{ position: "relative", height: isMobile ? 220 : 340 }}>
-        <BackgroundImage src={topCoverImage ?? ''} pos="absolute" inset="0">
+        <BackgroundImage src={topCoverImage ?? ""} pos="absolute" inset="0">
           <Box
             pos="absolute"
             inset="0"
@@ -101,7 +101,7 @@ function RouteComponent() {
         </BackgroundImage>
       </Box>
 
-      <Container size={1440} px={{ base: 'md', sm: 'xl' }}>
+      <Container size={1440} px={{ base: "md", sm: "xl" }}>
         <Anchor
           ref={backRef}
           component="button"
@@ -129,7 +129,7 @@ function RouteComponent() {
           <ArrowLeftIcon size={16} /> Back
         </Anchor>
 
-        <Grid mt="xl" style={{ gap: isMobile ? 16 : 40 }} align="flex-start">
+        <Grid mt="xl" gap={isMobile ? 16 : 36} align="flex-start">
           {/* Cover */}
 
           <Grid.Col span={{ base: 12, sm: 3.5 }}>
@@ -138,7 +138,7 @@ function RouteComponent() {
                 src={game.background_image}
                 style={{
                   ...(isMobile ? { height: 360 } : { aspectRatio: "3/4" }),
-                  boxShadow: "0 24px 60px -20px rgba(0,0,0,.8), inset 0 0 0 1px rgba(255,255,255,0.14)"
+                  boxShadow: "0 24px 60px -20px rgba(0,0,0,.8), inset 0 0 0 1px rgba(255,255,255,0.14)",
                 }}
                 bdrs="lg">
                 <Box pos="absolute" inset={0} bg="repeating-linear-gradient(0deg, transparent 0 3px, rgba(0,0,0,.05) 3px 4px)" />
@@ -150,10 +150,10 @@ function RouteComponent() {
                   borderRadius: "var(--mantine-radius-lg)",
                   background: "linear-gradient(160deg, var(--mantine-color-dark-5) 0%, var(--mantine-color-dark-7) 120%)",
                   boxShadow: "0 24px 60px -20px rgba(0,0,0,.8), inset 0 0 0 1px rgba(255,255,255,0.10)",
-                  display: "grid", placeItems: "center",
+                  display: "grid",
+                  placeItems: "center",
                   color: "var(--mantine-color-dark-3)",
-                }}
-              >
+                }}>
                 <GamepadIcon size={64} />
               </Box>
             )}
@@ -213,12 +213,14 @@ function RouteComponent() {
                         minWidth: 68,
                         padding: "0 12px",
                         color: game.playra_community_score != null ? "#7CC8E3" : "var(--mantine-color-dark-3)",
-                        background: game.playra_community_score != null
-                          ? "color-mix(in oklab, #7CC8E3 14%, transparent)"
-                          : "var(--mantine-color-dark-6)",
-                        boxShadow: game.playra_community_score != null
-                          ? "inset 0 0 0 1.5px color-mix(in oklab, #7CC8E3 45%, transparent)"
-                          : "inset 0 0 0 1.5px rgba(255,255,255,0.08)",
+                        background:
+                          game.playra_community_score != null
+                            ? "color-mix(in oklab, #7CC8E3 14%, transparent)"
+                            : "var(--mantine-color-dark-6)",
+                        boxShadow:
+                          game.playra_community_score != null
+                            ? "inset 0 0 0 1.5px color-mix(in oklab, #7CC8E3 45%, transparent)"
+                            : "inset 0 0 0 1.5px rgba(255,255,255,0.08)",
                       }}>
                       {game.playra_community_score != null ? game.playra_community_score.toFixed(1) : "—"}
                     </Box>
@@ -234,7 +236,7 @@ function RouteComponent() {
                 </Group>
 
                 {/* Actions */}
-                <Stack gap="xs" style={isMobile ? {} : { flexDirection: 'row', flexWrap: 'wrap' }}>
+                <Stack gap="xs" style={isMobile ? {} : { flexDirection: "row", flexWrap: "wrap" }}>
                   <Button
                     color="violet"
                     variant={inWishlist ? "light" : "filled"}
@@ -267,7 +269,7 @@ function RouteComponent() {
                   bg="dark.6"
                   bdrs="md"
                   gap={10}
-                  w={{ base: '100%', sm: 'auto' }}
+                  w={{ base: "100%", sm: "auto" }}
                   style={{
                     boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08)",
                   }}>
@@ -275,7 +277,12 @@ function RouteComponent() {
                     {myRating ? "Your rating" : "Rate this game"}
                   </Text>
                   <Group gap="md" align="center">
-                    <StarRating value={myRating} readonly={ratingLoading} onChange={(n) => rateGame({ score: n, gamePayload })} size={isMobile ? 20 : 24} />
+                    <StarRating
+                      value={myRating}
+                      readonly={ratingLoading}
+                      onChange={(n) => rateGame({ score: n, gamePayload })}
+                      size={isMobile ? 20 : 24}
+                    />
                     {myRating > 0 && (
                       <Anchor component="button" c="violet" fz="sm" onClick={() => rateGame({ score: 0, gamePayload })}>
                         Clear
@@ -308,17 +315,21 @@ function RouteComponent() {
                       type="button"
                       onClick={() => setShowDescription(true)}
                       style={{
-                        background: 'none', border: 'none', padding: '6px 0 0',
-                        cursor: 'pointer', color: 'var(--mantine-color-violet-4)',
-                        fontSize: 13, fontWeight: 500, display: 'block',
-                        position: 'relative', zIndex: 9,
-                      }}
-                    >
+                        background: "none",
+                        border: "none",
+                        padding: "6px 0 0",
+                        cursor: "pointer",
+                        color: "var(--mantine-color-violet-4)",
+                        fontSize: 13,
+                        fontWeight: 500,
+                        display: "block",
+                        position: "relative",
+                        zIndex: 9,
+                      }}>
                       Read more
                     </button>
                   </Box>
                 )}
-
               </Stack>
             </Stack>
           </Grid.Col>
@@ -360,38 +371,57 @@ function RouteComponent() {
         size="lg"
         padding={0}
         withCloseButton={false}
-        styles={{ header: { display: 'none' }, body: { padding: 0 }, content: { overflow: 'hidden' } }}
-        radius="md"
-      >
+        styles={{ header: { display: "none" }, body: { padding: 0 }, content: { overflow: "hidden" } }}
+        radius="md">
         {/* Blurred cover banner */}
-        <Box style={{ position: 'relative', height: 160, overflow: 'hidden', borderRadius: 'var(--mantine-radius-md) var(--mantine-radius-md) 0 0', flexShrink: 0 }}>
+        <Box
+          style={{
+            position: "relative",
+            height: 160,
+            overflow: "hidden",
+            borderRadius: "var(--mantine-radius-md) var(--mantine-radius-md) 0 0",
+            flexShrink: 0,
+          }}>
           {game.background_image && (
-            <Box style={{
-              position: 'absolute', inset: 0,
-              backgroundImage: `url(${game.background_image})`,
-              backgroundSize: 'cover', backgroundPosition: 'center top',
-              filter: 'blur(6px) brightness(0.35)',
-              transform: 'scale(1.08)',
-            }} />
+            <Box
+              style={{
+                position: "absolute",
+                inset: 0,
+                backgroundImage: `url(${game.background_image})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center top",
+                filter: "blur(6px) brightness(0.35)",
+                transform: "scale(1.08)",
+              }}
+            />
           )}
-          <Box style={{
-            position: 'absolute', inset: 0,
-            background: 'linear-gradient(to bottom, rgba(10,15,31,0.2) 0%, rgba(10,15,31,0.92) 100%)',
-          }} />
+          <Box
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "linear-gradient(to bottom, rgba(10,15,31,0.2) 0%, rgba(10,15,31,0.92) 100%)",
+            }}
+          />
           <ActionIcon
-            variant="subtle" color="gray" size="md" radius="xl"
-            style={{ position: 'absolute', top: 12, right: 12, zIndex: 1, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}
-            onClick={() => setShowDescription(false)}
-          >
+            variant="subtle"
+            color="gray"
+            size="md"
+            radius="xl"
+            style={{ position: "absolute", top: 12, right: 12, zIndex: 1, background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
+            onClick={() => setShowDescription(false)}>
             <XIcon size={14} />
           </ActionIcon>
-          <Box style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0 24px 18px' }}>
+          <Box style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "0 24px 18px" }}>
             <Group gap={6} mb={8}>
               {game.genres.slice(0, 3).map((g) => (
-                <Badge key={g.id} variant="light" color="violet" radius="xl" size="xs">{g.name}</Badge>
+                <Badge key={g.id} variant="light" color="violet" radius="xl" size="xs">
+                  {g.name}
+                </Badge>
               ))}
             </Group>
-            <Title order={2} style={{ fontSize: 22, letterSpacing: -0.6, lineHeight: 1.1 }}>{game.name}</Title>
+            <Title order={2} style={{ fontSize: 22, letterSpacing: -0.6, lineHeight: 1.1 }}>
+              {game.name}
+            </Title>
           </Box>
         </Box>
 
@@ -399,12 +429,7 @@ function RouteComponent() {
         <ScrollArea.Autosize mah={420}>
           <Box p="xl" pt="lg">
             {game.description ? (
-              <Box
-                fz="sm"
-                c="dark.1"
-                style={{ lineHeight: 1.8 }}
-                dangerouslySetInnerHTML={{ __html: game.description }}
-              />
+              <Box fz="sm" c="dark.1" style={{ lineHeight: 1.8 }} dangerouslySetInnerHTML={{ __html: game.description }} />
             ) : (
               <Text c="dark.1" fz="sm" style={{ lineHeight: 1.8 }}>
                 {game.description_raw}

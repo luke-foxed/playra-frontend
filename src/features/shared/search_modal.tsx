@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Modal, Box, Text, Group, Loader, Stack, Skeleton } from '@mantine/core'
+import { Modal, Box, Text, Group, Loader, Stack, Skeleton, Input, ActionIcon } from '@mantine/core'
 import { useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { getGames, popularGamesQueryOptions } from '../../features/games/api/games'
@@ -70,28 +70,52 @@ export default function SearchModal({ onClose }: Props) {
       }}
     >
       {/* Input row */}
-      <Box style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '18px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-        <SearchIcon size={20} style={{ color: 'var(--mantine-color-dark-2)', flexShrink: 0 }} />
-        <input
+      <Box style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <SearchIcon size={18} style={{ color: 'var(--mantine-color-dark-3)', flexShrink: 0 }} />
+        <Input
           ref={inputRef}
           value={q}
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={onKey}
-          placeholder="Search games, studios, genres…"
-          style={{
-            flex: 1, background: 'none', border: 'none', outline: 'none',
-            color: 'var(--mantine-color-dark-0)',
-            fontFamily: 'var(--mantine-font-family)',
-            fontSize: 18, fontWeight: 500,
+          placeholder="Search games..."
+          variant="unstyled"
+          styles={{
+            wrapper: { flex: 1 },
+            input: {
+              fontSize: 16,
+              fontWeight: 500,
+              color: 'var(--mantine-color-dark-0)',
+              background: 'transparent',
+              padding: 0,
+              height: 'auto',
+              minHeight: 'auto',
+            },
           }}
         />
-        {loading && <Loader size={17} color="violet" />}
+        {loading && <Loader size={16} color="violet" />}
         {!loading && q && (
-          <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--mantine-color-dark-2)', display: 'grid', padding: 0 }} onClick={() => setQ('')}>
-            <XIcon size={17} />
-          </button>
+          <ActionIcon variant="subtle" color="gray" size="sm" onClick={() => setQ('')}>
+            <XIcon size={14} />
+          </ActionIcon>
         )}
-        <button style={{ background: 'var(--mantine-color-dark-5)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--mantine-color-dark-2)', borderRadius: 7, padding: '4px 9px', fontSize: 11, cursor: 'pointer', fontFamily: 'var(--mantine-font-family-monospace)' }} onClick={onClose}>esc</button>
+        <Text
+          fz={11}
+          ff="monospace"
+          c="dark.2"
+          visibleFrom="sm"
+          style={{
+            background: 'var(--mantine-color-dark-5)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: 7,
+            padding: '4px 9px',
+            cursor: 'pointer',
+            flexShrink: 0,
+            userSelect: 'none',
+          }}
+          onClick={onClose}
+        >
+          esc
+        </Text>
       </Box>
 
       {/* Results */}
@@ -163,7 +187,7 @@ export default function SearchModal({ onClose }: Props) {
       </Box>
 
       {/* Footer */}
-      <Group gap="lg" px="xl" py="sm" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+      <Group gap="lg" px="xl" py="sm" visibleFrom="sm" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
         {[['↑↓', 'navigate'], ['↵', 'open'], ['esc', 'close']].map(([k, l]) => (
           <Group key={k} gap={4}>
             <Text fz={11} ff="monospace" c="dark.2"
