@@ -28,7 +28,7 @@ const BanIcon = () => (
 const content = {
   pending: {
     title: "Account Pending",
-    message: "Your account is awaiting approval. You'll be notified once it's been reviewed.",
+    message: "Your account is awaiting approval. Once approved, you will be able to access Playra and all its features.",
     accent: "#F0C36B",
     Icon: ClockIcon,
   },
@@ -51,6 +51,7 @@ function RouteComponent() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
+        marginTop: -68,
         background: "var(--mantine-color-dark-8)",
       }}
     >

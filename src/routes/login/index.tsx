@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import { z } from 'zod'
-import { Box, Title, Text, TextInput, PasswordInput, Button, Anchor, Paper, Center, Stack } from '@mantine/core'
+import { useState } from 'react'
+import { Box, Title, Text, TextInput, PasswordInput, Button, Anchor, Paper, Center, Stack, Alert } from '@mantine/core'
 import useLogin from '../../features/auth/hooks/useLogin'
 import Logo from '../../features/shared/logo'
 
@@ -10,15 +11,21 @@ export const Route = createFileRoute('/login/')({
 })
 
 function RouteComponent() {
-  const { mutateAsync: login } = useLogin()
+  const { mutateAsync: login, isPending } = useLogin()
   const { redirect: redirectTo } = Route.useSearch()
   const router = useRouter()
+  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    setError(null)
     const form = new FormData(e.currentTarget)
-    await login({ email: form.get('email') as string, password: form.get('password') as string })
-    router.history.push(redirectTo ?? '/')
+    try {
+      await login({ email: form.get('email') as string, password: form.get('password') as string })
+      router.history.push(redirectTo ?? '/')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed. Please try again.')
+    }
   }
 
   return (
@@ -36,7 +43,8 @@ function RouteComponent() {
             <Box style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <TextInput label="Email" type="email" name="email" placeholder="you@example.com" required radius="md" />
               <PasswordInput label="Password" name="password" placeholder="••••••••" required radius="md" />
-              <Button type="submit" fullWidth mt={6}>Log in</Button>
+              {error && <Alert color="red" radius="md" fz="sm">{error}</Alert>}
+              <Button type="submit" fullWidth mt={6} loading={isPending}>Log in</Button>
             </Box>
           </form>
           <Text ta="center" fz="sm" c="dark.2" mt="lg">
