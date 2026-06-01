@@ -1,6 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { useContext, useEffect } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { z } from "zod"
 import { Box, Text, Title, Anchor } from "@mantine/core"
+import { AuthContext } from "../../features/auth/providers/auth_provider"
+import { profileQueryOptions } from "../../features/profile/api/profile"
 
 const RestrictedSearchSchema = z.object({
   role: z.enum(["pending", "suspended"]).catch("pending"),
@@ -43,6 +47,20 @@ const content = {
 function RouteComponent() {
   const { role } = Route.useSearch()
   const { title, message, accent, Icon } = content[role]
+  const { session } = useContext(AuthContext)
+  const navigate = useNavigate()
+
+  const { data: profile } = useQuery({
+    ...profileQueryOptions(session?.user?.id ?? ''),
+    enabled: !!session?.user?.id,
+    refetchInterval: 5000,
+  })
+
+  useEffect(() => {
+    if (profile?.role === 'active' || profile?.role === 'admin') {
+      navigate({ to: '/' })
+    }
+  }, [profile?.role, navigate])
 
   return (
     <Box

@@ -228,52 +228,47 @@ function RouteComponent() {
                 )}
 
                 {/* Scores */}
-                <Group gap="xl">
-                  <Group gap="sm">
-                    <MetacriticBadge score={game.metacritic} size={52} />
-                    <Stack gap={1}>
-                      <Text fw={600} fz="sm">
-                        Metacritic
-                      </Text>
-                      <Text c="dark.2" fz="xs">
-                        Critic score
-                      </Text>
-                    </Stack>
-                  </Group>
-                  <Group gap="sm">
-                    <Box
-                      h={52}
-                      bdrs="md"
-                      ff="monospace"
-                      fz="18px"
-                      fw="600"
-                      display="grid"
-                      style={{
-                        placeItems: "center",
-                        minWidth: 68,
-                        padding: "0 12px",
-                        color: game.playra_community_score != null ? "#7CC8E3" : "var(--mantine-color-dark-3)",
-                        background:
-                          game.playra_community_score != null
-                            ? "color-mix(in oklab, #7CC8E3 14%, transparent)"
-                            : "var(--mantine-color-dark-6)",
-                        boxShadow:
-                          game.playra_community_score != null
-                            ? "inset 0 0 0 1.5px color-mix(in oklab, #7CC8E3 45%, transparent)"
-                            : "inset 0 0 0 1.5px rgba(255,255,255,0.08)",
-                      }}>
-                      {game.playra_community_score != null ? game.playra_community_score.toFixed(1) : "—"}
-                    </Box>
-                    <Stack gap={1}>
-                      <Text fw={600} fz="sm">
-                        User score
-                      </Text>
-                      <Text c="dark.2" fz="xs">
-                        Playra
-                      </Text>
-                    </Stack>
-                  </Group>
-                </Group>
+                {(() => {
+                  const badgeSize = isMobile ? 40 : 54
+                  const fz = isMobile ? '15px' : '19px'
+                  const pad = isMobile ? '6px 12px' : '8px 16px'
+                  return (
+                    <Group gap={0} align="center" wrap="nowrap" style={isMobile ? { width: '100%' } : undefined}>
+                      <Group gap={isMobile ? 8 : 12} align="center" pr={isMobile ? "md" : "lg"} style={isMobile ? { flex: 1 } : undefined}>
+                        <MetacriticBadge score={game.metacritic} size={badgeSize} />
+                        <Stack gap={1}>
+                          <Text fw={600} fz={isMobile ? "xs" : "sm"}>Metacritic</Text>
+                          <Text c="dark.2" fz="xs">Critic score</Text>
+                        </Stack>
+                      </Group>
+                      <Box style={{ width: 1, height: 32, background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
+                      <Group gap={isMobile ? 8 : 12} align="center" pl={isMobile ? "md" : "lg"} style={isMobile ? { flex: 1 } : undefined}>
+                        <Box
+                          ff="monospace"
+                          fw="600"
+                          style={{
+                            fontSize: fz,
+                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                            padding: pad, borderRadius: 999, flexShrink: 0,
+                            backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+                            color: game.playra_community_score != null ? "#7CC8E3" : "var(--mantine-color-dark-3)",
+                            background: game.playra_community_score != null
+                              ? "color-mix(in oklab, #7CC8E3 14%, rgba(10,15,31,0.72))"
+                              : "rgba(10,15,31,0.55)",
+                            border: game.playra_community_score != null
+                              ? "1px solid color-mix(in oklab, #7CC8E3 50%, transparent)"
+                              : "1px solid rgba(255,255,255,0.12)",
+                          }}>
+                          {game.playra_community_score != null ? game.playra_community_score.toFixed(1) : "—"}
+                        </Box>
+                        <Stack gap={1}>
+                          <Text fw={600} fz={isMobile ? "xs" : "sm"}>User score</Text>
+                          <Text c="dark.2" fz="xs">Playra</Text>
+                        </Stack>
+                      </Group>
+                    </Group>
+                  )
+                })()}
 
                 {/* Actions */}
                 <Stack gap="xs" style={isMobile ? {} : { flexDirection: "row", flexWrap: "wrap" }}>
@@ -324,9 +319,12 @@ function RouteComponent() {
                       size={isMobile ? 20 : 24}
                     />
                     {myRating > 0 && (
-                      <Anchor component="button" c="violet" fz="sm" onClick={() => rateGame({ score: 0, gamePayload })}>
-                        Clear
-                      </Anchor>
+                      <>
+                        <Text ff="monospace" fw={700} fz="sm" c="dark.1">{myRating}/10</Text>
+                        <Anchor component="button" c="violet" fz="sm" onClick={() => rateGame({ score: 0, gamePayload })}>
+                          Clear
+                        </Anchor>
+                      </>
                     )}
                   </Group>
                 </Stack>
