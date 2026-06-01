@@ -8,6 +8,7 @@ import { SORT_OPTIONS } from "../../features/games/constants"
 import type { Status } from "../../features/games/constants"
 import FilterSidebar from "../../features/games/components/filter_sidebar"
 import GameGrid from "../../features/games/components/game_grid"
+import { useUserLibrary } from "../../features/games/hooks/useUserLibrary"
 import routeProtector from "../../lib/route_protector"
 import { SearchIcon, FilterIcon, XIcon, ChevronIcon } from "../../features/shared/icons"
 
@@ -24,6 +25,7 @@ function RouteComponent() {
     ...gamesQueryOptions(search),
     placeholderData: keepPreviousData,
   })
+  const { wishlistedIds } = useUserLibrary()
   const [filtersOpen, setFiltersOpen] = useState(true)
 
   const ordering = search.ordering ?? "-rating"
@@ -172,6 +174,7 @@ function RouteComponent() {
             isLoading={isLoading}
             totalPages={totalPages}
             currentPage={currentPage}
+            wishlistedIds={wishlistedIds}
             onPageChange={(p) => navigate({ search: (prev) => ({ ...prev, page: p }) })}
             onClearAll={clearAll}
           />

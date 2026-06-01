@@ -47,3 +47,10 @@ export const listsQueryOptions = (userId?: string) =>
     queryKey: ["lists", userId ?? "self"],
     queryFn: () => getLists(userId ? { user_id: userId } : undefined),
   })
+
+export const listDetailQueryOptions = (id: string) =>
+  queryOptions({
+    queryKey: ["listDetail", id],
+    queryFn: () => getList(id),
+    staleTime: Infinity,
+  })

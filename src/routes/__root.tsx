@@ -1,5 +1,5 @@
-import { Outlet, createRootRouteWithContext, useRouterState } from '@tanstack/react-router'
-import { useContext, useEffect, useState } from 'react'
+import { Outlet, createRootRouteWithContext, useNavigate, useRouterState } from '@tanstack/react-router'
+import { useContext, useEffect, useRef, useState } from 'react'
 import ErrorBoundary from '../features/shared/error_boundary'
 import type { QueryClient } from '@tanstack/react-query'
 import { QueryClientProvider, useIsFetching } from '@tanstack/react-query'
@@ -8,6 +8,7 @@ import { Notifications } from '@mantine/notifications'
 import AuthProvider, { AuthContext } from '../features/auth/providers/auth_provider'
 import '@mantine/core/styles.css'
 import '@mantine/notifications/styles.css'
+import '@mantine/dates/styles.css'
 import '../styles/overrides.css'
 import '../styles/loader.css'
 import Navbar from '../features/shared/navbar'
@@ -35,8 +36,20 @@ function RootComponent() {
 }
 
 function AppContent() {
-  const { loading: authLoading } = useContext(AuthContext)
+  const { session, loading: authLoading } = useContext(AuthContext)
+  const navigate = useNavigate()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const prevSessionRef = useRef<typeof session>(undefined)
+
+  useEffect(() => {
+    if (authLoading) return
+    const wasAuthed = prevSessionRef.current !== undefined && prevSessionRef.current !== null
+    const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup')
+    if (wasAuthed && !session && !isAuthPage) {
+      navigate({ to: '/login' })
+    }
+    prevSessionRef.current = session
+  }, [session, authLoading, pathname, navigate])
   const isTransitioning = useRouterState({ select: (s) => s.isTransitioning })
   const isFetching = useIsFetching()
 

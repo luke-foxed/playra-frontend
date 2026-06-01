@@ -1,7 +1,7 @@
 import { z } from "zod"
 import { GenreSchema } from "../../games/api/schemas"
 
-export const ListTypeSchema = z.enum(["wishlist", "playlist", "custom"]).catch("custom")
+export const ListTypeSchema = z.enum(["wishlist", "ratings", "custom"]).catch("custom")
 
 export const ListGameSchema = z.object({
   game_id: z.number(),
@@ -19,6 +19,7 @@ export const ListSchema = z.object({
   description: z.string().nullable().catch(null),
   is_public: z.boolean().catch(false),
   type: ListTypeSchema,
+  game_count: z.number().optional().catch(undefined),
   created_by: z.string().optional(),
   created_at: z.string().optional(),
   updated_at: z.string().optional(),

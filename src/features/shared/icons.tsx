@@ -20,6 +20,8 @@ import {
   IconPencil,
   IconCheck,
   IconDeviceGamepad2,
+  IconDice,
+  IconBookmark,
 } from '@tabler/icons-react'
 
 type IconProps = { size?: number; fill?: boolean; stroke?: number; style?: React.CSSProperties; className?: string }
@@ -41,6 +43,8 @@ export const TrashIcon     = ({ size = 18, style, className }: IconProps) => <Ic
 export const EditIcon      = ({ size = 18, style, className }: IconProps) => <IconPencil size={size} style={style} className={className} />
 export const CheckIcon     = ({ size = 18, style, className }: IconProps) => <IconCheck size={size} style={style} className={className} />
 export const GamepadIcon   = ({ size = 18, style, className }: IconProps) => <IconDeviceGamepad2 size={size} style={style} className={className} />
+export const ShuffleIcon    = ({ size = 18, style, className }: IconProps) => <IconDice size={size} style={style} className={className} />
+export const BookmarkIcon   = ({ size = 18, style, className }: IconProps) => <IconBookmark size={size} style={style} className={className} />
 
 export const MetacriticIcon = ({ size = 18, style, className }: IconProps) => (
   <svg role="img" viewBox="0 0 24 24" width={size} height={size} fill="currentColor" style={style} className={className}>

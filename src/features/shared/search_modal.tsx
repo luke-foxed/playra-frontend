@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { Modal, Box, Text, Group, Loader, Stack, Skeleton } from '@mantine/core'
 import { useNavigate } from '@tanstack/react-router'
-import { getGames } from '../../features/games/api/games'
+import { useQuery } from '@tanstack/react-query'
+import { getGames, popularGamesQueryOptions } from '../../features/games/api/games'
 import type { Game } from '../../features/games/api/schemas'
 import MetacriticBadge from './metacritic_badge'
 import { SearchIcon, XIcon, ChevronIcon } from './icons'
@@ -16,6 +17,8 @@ export default function SearchModal({ onClose }: Props) {
   const [active, setActive] = useState(0)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const { data: popularData } = useQuery(popularGamesQueryOptions(8))
+  const displayed = q ? results : (popularData?.results ?? [])
 
   useEffect(() => { inputRef.current?.focus() }, [])
 
@@ -42,10 +45,10 @@ export default function SearchModal({ onClose }: Props) {
 
   const onKey = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') return onClose()
-    if (!results.length) return
-    if (e.key === 'ArrowDown') { e.preventDefault(); setActive((a) => Math.min(a + 1, results.length - 1)) }
+    if (!displayed.length) return
+    if (e.key === 'ArrowDown') { e.preventDefault(); setActive((a) => Math.min(a + 1, displayed.length - 1)) }
     if (e.key === 'ArrowUp') { e.preventDefault(); setActive((a) => Math.max(a - 1, 0)) }
-    if (e.key === 'Enter') { e.preventDefault(); go(results[active].id) }
+    if (e.key === 'Enter') { e.preventDefault(); go(displayed[active].id) }
   }
 
   return (
@@ -114,7 +117,7 @@ export default function SearchModal({ onClose }: Props) {
             <Text fz="xs" tt="uppercase" style={{ letterSpacing: 1.4 }} c="dark.2" fw={600} px={12} py={10}>
               {q ? `${results.length} result${results.length !== 1 ? 's' : ''}` : 'Popular right now'}
             </Text>
-            {results.map((g, i) => (
+            {displayed.map((g, i) => (
               <button
                 key={g.id}
                 onClick={() => go(g.id)}
@@ -136,10 +139,10 @@ export default function SearchModal({ onClose }: Props) {
               >
                 <Box
                   style={{
-                    width: 44, height: 44, borderRadius: 8,
-                    backgroundImage: g.background_image ? `url(${g.background_image})` : undefined,
-                    backgroundSize: 'cover', backgroundPosition: 'center',
-                    background: g.background_image ? undefined : 'var(--mantine-color-dark-5)',
+                    width: 44, height: 44, borderRadius: 8, flexShrink: 0,
+                    background: g.background_image
+                      ? `url(${g.background_image}) center / cover no-repeat`
+                      : 'var(--mantine-color-dark-5)',
                     boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)',
                   }}
                 />

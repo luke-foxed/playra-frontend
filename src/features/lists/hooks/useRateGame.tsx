@@ -10,12 +10,12 @@ type Args = {
   gamePayload: ListGame
 }
 
-export default function useRateGame(gameId: number, playlist: List | undefined) {
+export default function useRateGame(gameId: number, ratingsList: List | undefined) {
   const qc = useQueryClient()
   const { mutateAsync, isPending, isError } = useMutation({
     mutationFn: ({ score, gamePayload }: Args) => {
-      if (!playlist) throw new Error("Playlist not found")
-      return addGamesToList(playlist.id, [{ ...gamePayload, user_rating: score }])
+      if (!ratingsList) throw new Error("Ratings list not found")
+      return addGamesToList(ratingsList.id, [{ ...gamePayload, user_rating: score }])
     },
     onMutate: ({ score }) => {
       qc.setQueryData<UserGame>(userGameQueryOptions(gameId).queryKey, (prev) =>

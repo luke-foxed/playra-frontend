@@ -1,22 +1,23 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState, useContext } from 'react'
-import { useSuspenseQuery, useQueryClient } from '@tanstack/react-query'
+import { useSuspenseQuery, useQueryClient, useQuery } from '@tanstack/react-query'
 import {
   Box, Text, Title, Group, Stack, Avatar, Button, SimpleGrid,
   Container, Anchor, TextInput, Modal, Badge, ActionIcon,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { profileQueryOptions, updateProfile } from '../../features/profile/api/profile'
-import { listsQueryOptions, getList, deleteList, updateList, removeGamesFromList, createList } from '../../features/lists/api/lists'
+import { listsQueryOptions, listDetailQueryOptions, getList, deleteList, updateList, removeGamesFromList, createList } from '../../features/lists/api/lists'
 import routeProtector from '../../lib/route_protector'
 import { AuthContext } from '../../features/auth/providers/auth_provider'
 import type { List, ListDetail } from '../../features/lists/api/schemas'
 import GameCard from '../../features/games/components/game_card'
 import {
-  EditIcon, PlusIcon, ListIcon, HeartIcon, PlayIcon,
-  GlobeIcon, LockIcon, XIcon, TrashIcon, ArrowLeftIcon, SearchIcon,
+  EditIcon, PlusIcon, ListIcon, HeartIcon, PlayIcon, StarIcon,
+  GlobeIcon, LockIcon, XIcon, TrashIcon, ArrowLeftIcon, SearchIcon, BookmarkIcon, ChevronIcon,
 } from '../../features/shared/icons'
 import PlayraLoader from '../../features/shared/playra_loader'
+import { AvatarSelector } from '../../features/profile/components/avatar_selector'
 
 export const Route = createFileRoute('/profile/$id')({
   component: RouteComponent,
@@ -37,7 +38,7 @@ function avatarColor(str: string) {
 
 function ListTypeIcon({ type }: { type: string }) {
   if (type === 'wishlist') return <HeartIcon size={18} />
-  if (type === 'playlist') return <PlayIcon size={18} />
+  if (type === 'ratings') return <PlayIcon size={18} />
   return <ListIcon size={18} />
 }
 
@@ -71,19 +72,20 @@ function RouteComponent() {
     <Container size={1240} px="xl" pb="xl" pt="xl">
       {/* Profile header */}
       <Group align="center" gap="xl" pb="xl" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }} mb="md">
-        <Avatar
+        <HoverableAvatar
           src={profile.avatar_url ?? undefined}
           alt={profile.username ?? profile.email}
-          size={96}
-          radius="xl"
-          style={{ transform: 'translateZ(0)', ...(!profile.avatar_url ? { background: avatarColor(profile.username ?? profile.email) } : {}) }}
-          color="violet"
-        >
-          {!profile.avatar_url && ((profile.username ?? profile.email)[0] ?? '?').toUpperCase()}
-        </Avatar>
+          fallbackChar={((profile.username ?? profile.email)[0] ?? '?').toUpperCase()}
+          bg={!profile.avatar_url ? avatarColor(profile.username ?? profile.email) : undefined}
+          editable={isOwn}
+          onEdit={() => setEditOpen(true)}
+        />
         <Stack gap={4} style={{ flex: 1 }}>
           <Title order={1} style={{ letterSpacing: -1, fontSize: 32 }}>{profile.username ?? profile.email}</Title>
-          <Text fz="sm" c="dark.2" ff="monospace">@{profile.username ?? profile.email}</Text>
+          <Group gap="md" align="center">
+            {profile.username && <Text fz="sm" c="dark.2" ff="monospace">@{profile.username}</Text>}
+            <Text fz="sm" c="dark.3" ff="monospace">{profile.email}</Text>
+          </Group>
           <Group gap="xl" mt="xs">
             <Text fz="sm" c="dark.2"><strong style={{ color: 'var(--mantine-color-dark-0)', fontFamily: 'var(--mantine-font-family-monospace)' }}>{lists.length}</strong> lists</Text>
           </Group>
@@ -95,42 +97,66 @@ function RouteComponent() {
         )}
       </Group>
 
-      {/* Lists section */}
-      <Group justify="space-between" align="center" mb="md">
-        <Group gap={10}>
-          <Box style={{ color: 'var(--mantine-color-violet-4)', display: 'grid' }}><ListIcon size={19} /></Box>
-          <Title order={2} style={{ letterSpacing: -0.6 }}>Your lists</Title>
-        </Group>
-        {isOwn && (
-          <Anchor component="button" c="dark.2" fz="sm" onClick={() => setNewListOpen(true)}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-            New list <PlusIcon size={14} />
-          </Anchor>
-        )}
-      </Group>
-
-      <SimpleGrid cols={{ base: 1, xs: 2, sm: 3, md: 4 }} spacing="md">
-        {lists.map((l) => (
-          <ListCard key={l.id} list={l} onOpen={() => setOpenListId(l.id)} />
-        ))}
-        {isOwn && (
-          <Box
-            style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-              gap: 10, minHeight: 184, border: '1.5px dashed rgba(255,255,255,0.14)',
-              borderRadius: 'var(--mantine-radius-md)', cursor: 'pointer',
-              color: 'var(--mantine-color-dark-2)', fontSize: 14, fontWeight: 500,
-              transition: 'color 0.15s, border-color 0.15s',
-            }}
-            onClick={() => setNewListOpen(true)}
-          >
-            <PlusIcon size={26} />
-            <span>Create a list</span>
+      {/* Quick lists — wishlist + ratings */}
+      {(() => {
+        const pinned = lists.filter((l) => l.type === 'wishlist' || l.type === 'ratings')
+        if (pinned.length === 0) return null
+        return (
+          <Box mb={44}>
+            <Group justify="space-between" align="flex-end" mb="lg">
+              <Group gap={10}>
+                <Box style={{ color: 'var(--mantine-color-violet-4)', display: 'grid' }}><BookmarkIcon size={19} /></Box>
+                <Title order={2} style={{ letterSpacing: -0.6 }}>Quick lists</Title>
+              </Group>
+              <Text fz={11} tt="uppercase" fw={600} c="dark.3" ff="monospace" style={{ letterSpacing: '0.09em' }}>Always pinned</Text>
+            </Group>
+            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+              {pinned.map((l) => <PinnedCard key={l.id} list={l} onOpen={() => setOpenListId(l.id)} />)}
+            </SimpleGrid>
           </Box>
-        )}
-      </SimpleGrid>
+        )
+      })()}
 
-      <Box h={60} />
+      {/* Custom lists */}
+      {(() => {
+        const custom = lists.filter((l) => l.type === 'custom')
+        return (
+          <Box mb={60}>
+            <Group justify="space-between" align="center" mb="lg">
+              <Group gap={10}>
+                <Box style={{ color: 'var(--mantine-color-violet-4)', display: 'grid' }}><ListIcon size={19} /></Box>
+                <Title order={2} style={{ letterSpacing: -0.6 }}>Your lists</Title>
+              </Group>
+              {isOwn && (
+                <Anchor component="button" c="dark.2" fz="sm" onClick={() => setNewListOpen(true)}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                  New list <PlusIcon size={14} />
+                </Anchor>
+              )}
+            </Group>
+            <SimpleGrid cols={{ base: 1, xs: 2, sm: 3, md: 4 }} spacing="md">
+              {custom.map((l) => (
+                <ListCard key={l.id} list={l} onOpen={() => setOpenListId(l.id)} />
+              ))}
+              {isOwn && (
+                <Box
+                  style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    gap: 10, minHeight: 184, border: '1.5px dashed rgba(255,255,255,0.14)',
+                    borderRadius: 'var(--mantine-radius-md)', cursor: 'pointer',
+                    color: 'var(--mantine-color-dark-2)', fontSize: 14, fontWeight: 500,
+                    transition: 'color 0.15s, border-color 0.15s',
+                  }}
+                  onClick={() => setNewListOpen(true)}
+                >
+                  <PlusIcon size={26} />
+                  <span>Create a list</span>
+                </Box>
+              )}
+            </SimpleGrid>
+          </Box>
+        )
+      })()}
 
       {editOpen && (
         <EditProfileModal
@@ -160,37 +186,175 @@ function RouteComponent() {
   )
 }
 
+function HoverableAvatar({
+  src, alt, fallbackChar, bg, editable, onEdit,
+}: {
+  src?: string; alt: string; fallbackChar: string
+  bg?: string; editable: boolean; onEdit: () => void
+}) {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <Box
+      style={{ position: 'relative', cursor: editable ? 'pointer' : 'default', flexShrink: 0 }}
+      onMouseEnter={() => editable && setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={() => editable && onEdit()}
+    >
+      <Avatar
+        src={src}
+        alt={alt}
+        size={96}
+        radius="xl"
+        style={{ transform: 'translateZ(0)', ...(bg ? { background: bg } : {}) }}
+        color="violet"
+      >
+        {!src && fallbackChar}
+      </Avatar>
+      {editable && hovered && (
+        <Box style={{
+          position: 'absolute', inset: 0, borderRadius: 'var(--mantine-radius-xl)',
+          background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(2px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          transition: 'opacity 0.15s',
+        }}>
+          <EditIcon size={22} style={{ color: 'white' }} />
+        </Box>
+      )}
+    </Box>
+  )
+}
+
+const PINNED_META: Record<string, { Icon: React.ComponentType<{ size?: number; fill?: boolean; style?: React.CSSProperties }>, fill?: boolean, accent: string, blurb: string }> = {
+  wishlist: { Icon: HeartIcon, fill: false, accent: '#F498C8', blurb: "Games you're itching to play" },
+  ratings:  { Icon: StarIcon,  fill: true,  accent: '#F0C36B', blurb: "Games you've scored & rated" },
+}
+
+function PinnedCard({ list, onOpen }: { list: List; onOpen: () => void }) {
+  const [hovered, setHovered] = useState(false)
+  const meta = PINNED_META[list.type] ?? { Icon: ListIcon, fill: false, accent: '#B098FF', blurb: '' }
+  const { Icon, fill, accent } = meta
+  const { data: detail } = useQuery({ ...listDetailQueryOptions(list.id), staleTime: 60_000 })
+  const n = detail?.games.length ?? list.game_count ?? null
+
+  return (
+    <Box
+      onClick={onOpen}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        position: 'relative', overflow: 'hidden', cursor: 'pointer',
+        borderRadius: 20, minHeight: 188, padding: '24px 26px',
+        display: 'flex',
+        background: 'var(--mantine-color-dark-6)',
+        boxShadow: hovered
+          ? `0 24px 52px -24px rgba(0,0,0,.75), inset 0 0 0 1px color-mix(in oklab, ${accent} 55%, transparent)`
+          : 'inset 0 0 0 1px rgba(255,255,255,0.12)',
+        transform: hovered ? 'translateY(-3px)' : 'none',
+        transition: 'transform 0.16s, box-shadow 0.16s',
+      }}
+    >
+      {/* gradient + bg */}
+      <Box style={{
+        position: 'absolute', inset: 0, pointerEvents: 'none',
+        background: `linear-gradient(120deg, color-mix(in oklab, ${accent} 26%, transparent) 0%, transparent 58%), linear-gradient(160deg, var(--mantine-color-dark-6) 10%, var(--mantine-color-dark-8) 130%)`,
+      }} />
+      {/* dot texture */}
+      <Box style={{
+        position: 'absolute', inset: 0, opacity: 0.5, pointerEvents: 'none',
+        backgroundImage: `radial-gradient(color-mix(in oklab, ${accent} 30%, transparent) 1px, transparent 1.4px)`,
+        backgroundSize: '22px 22px',
+        WebkitMaskImage: 'linear-gradient(115deg, #000 0%, transparent 52%)',
+        maskImage: 'linear-gradient(115deg, #000 0%, transparent 52%)',
+      }} />
+      {/* bloom orb */}
+      <Box style={{
+        position: 'absolute', width: 320, height: 320, right: -36, top: -126,
+        borderRadius: '50%', pointerEvents: 'none',
+        background: `radial-gradient(circle, color-mix(in oklab, ${accent} 52%, transparent) 0%, transparent 66%)`,
+        filter: 'blur(4px)',
+      }} />
+      {/* oversized glyph */}
+      <Box style={{
+        position: 'absolute', right: -26, bottom: -52, lineHeight: 0, pointerEvents: 'none',
+        color: accent, opacity: 0.2,
+        filter: `drop-shadow(0 8px 24px color-mix(in oklab, ${accent} 50%, transparent))`,
+      }}>
+        <Icon size={224} fill={fill} />
+      </Box>
+
+      {/* content */}
+      <Box style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flex: 1 }}>
+        <Box>
+          <Box style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 700, letterSpacing: 0.3, color: accent, marginBottom: 9 }}>
+            <Icon size={14} fill={fill} /> {list.name}
+          </Box>
+          <Text fw={700} fz={18} style={{ letterSpacing: -0.4, lineHeight: 1.25, maxWidth: '17ch', textWrap: 'balance' as React.CSSProperties['textWrap'] }}>
+            {meta.blurb}
+          </Text>
+        </Box>
+        <Group align="center" gap={8} mt="md">
+          <Text fz={13} c="dark.2">
+            <strong style={{ fontFamily: 'var(--mantine-font-family-monospace)', fontWeight: 700, color: 'var(--mantine-color-dark-0)', fontSize: 17 }}>
+              {n ?? '—'}
+            </strong>{' '}
+            {n === 1 ? 'game' : 'games'}
+          </Text>
+          <Box style={{
+            marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 3,
+            fontSize: 12.5, fontWeight: 600, color: accent,
+            opacity: hovered ? 1 : 0, transform: hovered ? 'translateX(0)' : 'translateX(-4px)',
+            transition: 'opacity 0.16s, transform 0.16s',
+          }}>
+            Open <ChevronIcon size={13} />
+          </Box>
+        </Group>
+      </Box>
+    </Box>
+  )
+}
+
 function ListCard({ list, onOpen }: { list: List; onOpen: () => void }) {
-  const isLocked = list.type !== 'custom'
+  const [hovered, setHovered] = useState(false)
+  const n = list.game_count ?? null
   return (
     <Box
       style={{
-        background: 'var(--mantine-color-dark-6)', borderRadius: 'var(--mantine-radius-md)',
+        background: 'var(--mantine-color-dark-6)', borderRadius: 14,
         overflow: 'hidden', cursor: 'pointer',
-        boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)',
+        boxShadow: hovered
+          ? '0 16px 36px -18px rgba(0,0,0,.6), inset 0 0 0 1px rgba(255,255,255,0.14)'
+          : 'inset 0 0 0 1px rgba(255,255,255,0.08)',
+        transform: hovered ? 'translateY(-3px)' : 'none',
         transition: 'transform 0.14s, box-shadow 0.14s',
       }}
       onClick={onOpen}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
-      <Box style={{ height: 132, background: 'var(--mantine-color-dark-7)', display: 'grid', placeItems: 'center' }}>
+      {/* cover area */}
+      <Box style={{ position: 'relative', height: 132, background: 'var(--mantine-color-dark-7)', display: 'grid', placeItems: 'center' }}>
         <Box style={{ color: 'var(--mantine-color-dark-2)', opacity: 0.4 }}>
-          <ListTypeIcon type={list.type} />
+          <ListIcon size={24} />
         </Box>
+        {list.is_public && (
+          <Box style={{
+            position: 'absolute', top: 10, right: 10, zIndex: 2,
+            display: 'inline-flex', alignItems: 'center', gap: 5,
+            background: 'color-mix(in oklab, var(--mantine-color-dark-8) 66%, transparent)',
+            backdropFilter: 'blur(6px)',
+            color: '#7CC8E3', fontSize: 10.5, fontWeight: 600, letterSpacing: 0.3,
+            padding: '4px 9px', borderRadius: 999,
+            boxShadow: 'inset 0 0 0 1px color-mix(in oklab, #7CC8E3 36%, transparent)',
+          }}>
+            <GlobeIcon size={12} /> Public
+          </Box>
+        )}
       </Box>
-      <Box p="sm">
-        <Group justify="space-between" align="center" gap="xs">
-          <Group gap="xs">
-            <Box style={{ color: 'var(--mantine-color-dark-2)' }}><ListTypeIcon type={list.type} /></Box>
-            <Text fw={600} fz={14.5} style={{ letterSpacing: -0.2 }}>{list.name}</Text>
-          </Group>
-          {isLocked ? (
-            <LockIcon size={13} style={{ color: 'var(--mantine-color-dark-2)' }} />
-          ) : list.is_public ? (
-            <GlobeIcon size={13} style={{ color: '#7CC8E3' }} />
-          ) : null}
-        </Group>
-        <Text fz={11.5} c="dark.2" mt={4} ff="monospace">
-          {list.is_public && !isLocked ? 'public' : 'private'}
+      {/* footer */}
+      <Box style={{ padding: '13px 14px' }}>
+        <Text fw={600} fz={15} style={{ letterSpacing: -0.2 }}>{list.name}</Text>
+        <Text fz={11.5} c="dark.3" mt={3} ff="monospace">
+          {n !== null ? `${n} ${n === 1 ? 'game' : 'games'}` : '—'}
         </Text>
       </Box>
     </Box>
@@ -478,10 +642,40 @@ function EditProfileModal({
   }
 
   return (
-    <Modal opened onClose={onClose} title="Edit profile">
-      <Stack gap="sm">
-        <TextInput label="Display name" value={username} onChange={(e) => setUsername(e.target.value)} />
-        <TextInput label="Avatar URL" placeholder="https://…" value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} />
+    <Modal
+      opened
+      onClose={onClose}
+      title="Edit profile"
+      size={520}
+      styles={{
+        title: { fontSize: 22, fontWeight: 700, letterSpacing: -0.5 },
+      }}
+    >
+      <Stack gap="md">
+        <Box
+          style={{
+            background: 'var(--mantine-color-dark-6)',
+            borderRadius: 'var(--mantine-radius-md)',
+            boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)',
+            padding: '14px 16px',
+          }}
+        >
+          <Text fz="xs" tt="uppercase" fw={700} c="dark.1" ff="monospace" mb={10} style={{ letterSpacing: '0.09em' }}>
+            Display name
+          </Text>
+          <TextInput
+            placeholder={profile.email}
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            styles={{
+              input: {
+                background: 'var(--mantine-color-dark-7)',
+                border: '1px solid rgba(255,255,255,0.10)',
+              },
+            }}
+          />
+        </Box>
+        <AvatarSelector initialUrl={profile.avatar_url} onChange={setAvatarUrl} />
         <Group gap="xs" mt="xs">
           <Button variant="default" style={{ flex: 1 }} onClick={onClose}>Cancel</Button>
           <Button style={{ flex: 1 }} loading={saving} onClick={save}>Save changes</Button>

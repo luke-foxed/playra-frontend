@@ -1,9 +1,10 @@
 import { Link } from '@tanstack/react-router'
-import { Box, AspectRatio, UnstyledButton, Group, Text, Tooltip } from '@mantine/core'
+import { Box, AspectRatio, Group, Text } from '@mantine/core'
 import { useState } from 'react'
 import MetacriticBadge from '../../shared/metacritic_badge'
-import { HeartIcon, ClockIcon, StarIcon } from '../../shared/icons'
+import { HeartIcon, ClockIcon, StarIcon, XIcon } from '../../shared/icons'
 import useAddToWishlist from '../hooks/useAddToWishlist'
+import useRemoveFromWishlist from '../hooks/useRemoveFromWishlist'
 
 const PLATFORM: Record<string, string> = {
   'playstation5': 'PS5',
@@ -41,18 +42,21 @@ type Props = {
   released?: string | null
   genres?: string[]
   platforms?: string[]
-  rating?: number | null
+  communityScore?: number | null
   showWish?: boolean
   inWishlist?: boolean
   onWishToggle?: (e: React.MouseEvent) => void
 }
 
 export default function GameCard({
-  id, name, imageUrl, metacritic, released, genres, platforms, rating,
+  id, name, imageUrl, metacritic, released, genres, platforms, communityScore,
   showWish = true, inWishlist = false, onWishToggle,
 }: Props) {
   const [hovered, setHovered] = useState(false)
-  const { addToWishlist, isLoading: wishLoading } = useAddToWishlist(id)
+  const [badgeHovered, setBadgeHovered] = useState(false)
+  const { addToWishlist, isLoading: addLoading } = useAddToWishlist(id)
+  const { removeFromWishlist, isLoading: removeLoading } = useRemoveFromWishlist(id)
+  const wishLoading = addLoading || removeLoading
 
   const year = released?.slice(0, 4)
   const isUpcoming = released ? released > new Date().toISOString().slice(0, 10) : false
@@ -83,20 +87,18 @@ export default function GameCard({
     }
   }
 
-  const wishVisible = hovered || inWishlist
-
   return (
     <Link to='/games/$id' params={{ id: String(id) }} style={{ textDecoration: "none", display: "block" }}>
       <Box
         bg='dark.6'
         onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
+        onMouseLeave={() => { setHovered(false); setBadgeHovered(false) }}
         style={{
           borderRadius: "var(--mantine-radius-md)",
           overflow: "hidden",
           cursor: "pointer",
           boxShadow: hovered
-            ? "inset 0 0 0 1px rgba(139,107,255,0.35), 0 12px 32px -8px rgba(0,0,0,.6)"
+            ? "0 12px 32px -8px rgba(0,0,0,.6)"
             : "inset 0 0 0 1px rgba(255,255,255,0.07)",
           transform: hovered ? "translateY(-3px)" : "none",
           transition: "transform 0.18s ease, box-shadow 0.18s ease",
@@ -123,34 +125,68 @@ export default function GameCard({
                 </Box>
               </Box>
             ) : (
-              showWish && (
-                <Tooltip label={inWishlist ? "In wishlist" : "Add to wishlist"} position="bottom" withArrow offset={6}>
-                  <UnstyledButton
-                    pos='absolute'
-                    top={10}
-                    left={10}
-                    disabled={wishLoading}
-                    className={wishLoading ? "wish-loading" : undefined}
-                    style={{
-                      width: 30,
-                      height: 30,
-                      borderRadius: "50%",
-                      background: inWishlist ? "rgba(244,152,200,0.82)" : "rgba(244,152,200,0.18)",
-                      border: "1.5px solid rgba(244,152,200,0.75)",
-                      display: "grid",
-                      placeItems: "center",
-                      color: "#F498C8",
-                      opacity: wishVisible ? 1 : 0,
-                      transform: wishVisible ? "scale(1)" : "scale(0.75)",
-                      transition: "opacity 0.15s, transform 0.15s, background 0.15s",
-                      boxShadow: inWishlist ? "0 0 10px rgba(244,152,200,0.45)" : "none",
-                      filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.7))",
-                    }}
-                    onClick={handleWishClick}>
-                    <HeartIcon size={15} fill={false} stroke={2.5} />
-                  </UnstyledButton>
-                </Tooltip>
+              showWish && !inWishlist && (
+                <Box
+                  pos="absolute"
+                  bottom={10}
+                  right={10}
+                  onClick={handleWishClick}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 5,
+                    background: "color-mix(in oklab, var(--mantine-color-violet-5) 22%, rgba(10,15,31,.72))",
+                    backdropFilter: "blur(6px)",
+                    color: "var(--mantine-color-violet-3)",
+                    borderRadius: 999,
+                    padding: "4px 10px",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    border: "1px solid color-mix(in oklab, var(--mantine-color-violet-4) 35%, transparent)",
+                    boxShadow: "0 0 14px color-mix(in oklab, var(--mantine-color-violet-5) 30%, transparent)",
+                    opacity: hovered ? 1 : 0,
+                    transform: hovered ? "translateY(0)" : "translateY(4px)",
+                    transition: "opacity 0.15s, transform 0.15s",
+                    cursor: "pointer",
+                    pointerEvents: wishLoading ? "none" : "auto",
+                  }}
+                >
+                  <HeartIcon size={10} fill={false} stroke={2} />
+                  Wishlist
+                </Box>
               )
+            )}
+
+            {inWishlist && (
+              <Box
+                pos="absolute"
+                bottom={10}
+                right={10}
+                onMouseEnter={() => setBadgeHovered(true)}
+                onMouseLeave={() => setBadgeHovered(false)}
+                onClick={(e) => { e.preventDefault(); removeFromWishlist() }}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 5,
+                  background: badgeHovered
+                    ? "color-mix(in oklab, var(--mantine-color-red-7) 22%, rgba(10,15,31,.72))"
+                    : "color-mix(in oklab, var(--mantine-color-violet-5) 22%, rgba(10,15,31,.72))",
+                  backdropFilter: "blur(6px)",
+                  color: badgeHovered ? "var(--mantine-color-red-4)" : "var(--mantine-color-violet-3)",
+                  borderRadius: 999,
+                  padding: "4px 10px",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  border: badgeHovered
+                    ? "1px solid color-mix(in oklab, var(--mantine-color-red-5) 35%, transparent)"
+                    : "1px solid color-mix(in oklab, var(--mantine-color-violet-4) 35%, transparent)",
+                  boxShadow: badgeHovered
+                    ? "0 0 14px color-mix(in oklab, var(--mantine-color-red-6) 25%, transparent)"
+                    : "0 0 14px color-mix(in oklab, var(--mantine-color-violet-5) 30%, transparent)",
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                }}
+              >
+                {badgeHovered ? <XIcon size={10} /> : <HeartIcon size={10} fill stroke={0} />}
+                {badgeHovered ? "Remove" : "Wishlisted"}
+              </Box>
             )}
 
             {!isUpcoming && (
@@ -178,10 +214,12 @@ export default function GameCard({
               {overflow > 0 && <Box style={{ ...platformPill, color: "var(--mantine-color-dark-2)" }}>+{overflow}</Box>}
               {!shown.length && year && <Text fz={11} c='dark.3' ff='monospace'>{year}</Text>}
             </Group>
-            {rating != null && rating > 0 && !isUpcoming && (
+            {!isUpcoming && (
               <Group gap={3} wrap='nowrap' style={{ flexShrink: 0 }}>
-                <StarIcon size={11} fill style={{ color: "#F0C36B" }} />
-                <Text fz={11} fw={600} ff='monospace' c='dark.1'>{(rating * 2).toFixed(1)}</Text>
+                <StarIcon size={11} fill={communityScore != null} style={{ color: communityScore != null ? "#F0C36B" : "var(--mantine-color-dark-4)" }} />
+                <Text fz={11} fw={600} ff='monospace' c={communityScore != null ? "dark.1" : "dark.4"}>
+                  {communityScore != null ? communityScore.toFixed(1) : "—"}
+                </Text>
               </Group>
             )}
           </Group>

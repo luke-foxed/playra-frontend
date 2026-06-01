@@ -1,4 +1,5 @@
-import { Box, Group, Text, Slider, UnstyledButton, NumberInput } from "@mantine/core"
+import { Box, Group, Text, Slider, UnstyledButton } from "@mantine/core"
+import { YearPickerInput } from "@mantine/dates"
 import { useState, useEffect, useRef } from "react"
 import { GENRES, PLATFORMS, chipBase } from "../constants"
 import type { Status } from "../constants"
@@ -90,6 +91,8 @@ export default function FilterSidebar({
       isExternalUpdate.current = false
       return
     }
+    const complete = (!!localFrom && !!localTo) || (!localFrom && !localTo)
+    if (!complete) return
     const id = setTimeout(() => onDateRangeChange(localFrom, localTo), 600)
     return () => clearTimeout(id)
   }, [localFrom, localTo]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -173,31 +176,32 @@ export default function FilterSidebar({
 
           <Box px={18} pt={20} pb={22}>
             <SectionLabel>Release year</SectionLabel>
-            <Group gap={8} align="center" wrap="nowrap">
-              <NumberInput
-                placeholder="From"
-                min={1970}
-                max={2030}
-                value={localFrom ? parseInt(localFrom) : ""}
-                onChange={(val) => setLocalFrom(typeof val === "number" ? String(val) : "")}
-                size="xs"
-                hideControls
-                styles={{ input: { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.10)", color: "#fff", borderRadius: 8 } }}
-                style={{ flex: 1 }}
-              />
-              <Text fz="xs" c="dark.3">—</Text>
-              <NumberInput
-                placeholder="To"
-                min={1970}
-                max={2030}
-                value={localTo ? parseInt(localTo) : ""}
-                onChange={(val) => setLocalTo(typeof val === "number" ? String(val) : "")}
-                size="xs"
-                hideControls
-                styles={{ input: { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.10)", color: "#fff", borderRadius: 8 } }}
-                style={{ flex: 1 }}
-              />
-            </Group>
+            <YearPickerInput
+              type="range"
+              placeholder="Any range"
+              minDate="1970-01-01"
+              maxDate="2030-01-01"
+              value={[
+                localFrom ? `${localFrom}-01-01` : null,
+                localTo ? `${localTo}-01-01` : null,
+              ]}
+              onChange={(val) => {
+                const [from, to] = val as [string | null, string | null]
+                setLocalFrom(from ? from.slice(0, 4) : "")
+                setLocalTo(to ? to.slice(0, 4) : "")
+              }}
+              size="xs"
+              styles={{
+                input: {
+                  background: "rgba(255,255,255,0.05)",
+                  border: "1px solid rgba(255,255,255,0.10)",
+                  color: "#fff",
+                  borderRadius: 8,
+                },
+                calendarHeader: { color: "#fff" },
+                yearsListCell: { color: "#B7B8D6" },
+              }}
+            />
           </Box>
         </Box>
       </Box>

@@ -28,6 +28,7 @@ export const GameSchema = z.object({
   ratings: z.array(RatingSchema).catch([]),
   ratings_count: z.number(),
   metacritic: z.number().nullable(),
+  playra_community_score: z.number().nullable().catch(null),
   genres: z.array(GenreSchema).catch([]),
   platforms: z.array(PlatformSchema).catch([]),
   short_screenshots: z.array(ScreenshotSchema).optional(),
@@ -36,6 +37,7 @@ export const GameSchema = z.object({
 export const EsrbRatingSchema = z.object({ id: z.number(), name: z.string(), slug: z.string() })
 
 export const GameDetailSchema = GameSchema.extend({
+  description: z.string().optional().catch(undefined),
   description_raw: z.string(),
   website: z.string(),
   playtime: z.number(),

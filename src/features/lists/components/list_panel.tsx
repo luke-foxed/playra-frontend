@@ -30,7 +30,7 @@ type Props = {
   currentUserId: string | null
 }
 
-const LIST_TYPE_ORDER = { wishlist: 0, playlist: 1, custom: 2 } as const
+const LIST_TYPE_ORDER = { wishlist: 0, ratings: 1, custom: 2 } as const
 
 export default function ListPanel({ profileUserId, currentUserId }: Props) {
   const isOwnProfile = profileUserId === currentUserId

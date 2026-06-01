@@ -16,6 +16,8 @@ import {
   Checkbox,
   Grid,
   BackgroundImage,
+  ActionIcon,
+  ScrollArea,
 } from "@mantine/core"
 import { Modal } from "@mantine/core"
 import { notifications } from "@mantine/notifications"
@@ -25,7 +27,7 @@ import routeProtector from "../../lib/route_protector"
 import MetacriticBadge from "../../features/shared/metacritic_badge"
 import StarRating from "../../features/shared/star_rating"
 import GameCard from "../../features/games/components/game_card"
-import { ArrowLeftIcon, HeartIcon, PlusIcon, SparkleIcon, ListIcon, GlobeIcon, LockIcon, GamepadIcon } from "../../features/shared/icons"
+import { ArrowLeftIcon, HeartIcon, PlusIcon, SparkleIcon, ListIcon, GlobeIcon, LockIcon, GamepadIcon, XIcon } from "../../features/shared/icons"
 import useWishlistToggle from "../../features/lists/hooks/useWishlistToggle"
 import useRateGame from "../../features/lists/hooks/useRateGame"
 import PlayraLoader from "../../features/shared/playra_loader"
@@ -61,7 +63,7 @@ function RouteComponent() {
   const similar = similarData.results.filter((g) => g.id !== game.id).slice(0, 6)
 
   const wishlist = myLists.find((l) => l.type === "wishlist")
-  const playlist = myLists.find((l) => l.type === "playlist")
+  const ratingsList = myLists.find((l) => l.type === "ratings")
   const customLists = myLists.filter((l) => l.type !== "wishlist")
 
   const inWishlist = userGame.in_wishlist
@@ -78,8 +80,9 @@ function RouteComponent() {
   }
 
   const { toggleWishlist, isLoading: wishlistLoading } = useWishlistToggle(id, wishlist)
-  const { rateGame, isLoading: ratingLoading } = useRateGame(id, playlist)
+  const { rateGame, isLoading: ratingLoading } = useRateGame(id, ratingsList)
   const [showLists, setShowLists] = useState(false)
+  const [showDescription, setShowDescription] = useState(false)
 
   const topCoverImage = game.background_image_additional || game.background_image
 
@@ -114,6 +117,7 @@ function RouteComponent() {
             textDecoration: "none",
             marginTop: -20,
             position: "relative",
+            zIndex: 10,
           }}>
           <ArrowLeftIcon size={16} /> Back
         </Anchor>
@@ -186,40 +190,43 @@ function RouteComponent() {
                       </Text>
                     </Stack>
                   </Group>
-                  {game.rating > 0 && (
-                    <Group gap="sm">
-                      <Box
-                        w={52}
-                        h={52}
-                        bdrs="md"
-                        ff="monospace"
-                        fz="18px"
-                        fw="600"
-                        display="grid"
-                        style={{
-                          placeItems: "center",
-                          color: "#7CC8E3",
-                          background: "color-mix(in oklab, #7CC8E3 14%, transparent)",
-                          boxShadow: "inset 0 0 0 1.5px color-mix(in oklab, #7CC8E3 45%, transparent)",
-                        }}>
-                        {game.rating.toFixed(1)}
-                      </Box>
-                      <Stack gap={1}>
-                        <Text fw={600} fz="sm">
-                          User score
-                        </Text>
-                        <Text c="dark.2" fz="xs">
-                          Community
-                        </Text>
-                      </Stack>
-                    </Group>
-                  )}
+                  <Group gap="sm">
+                    <Box
+                      h={52}
+                      bdrs="md"
+                      ff="monospace"
+                      fz="18px"
+                      fw="600"
+                      display="grid"
+                      style={{
+                        placeItems: "center",
+                        minWidth: 68,
+                        padding: "0 12px",
+                        color: game.playra_community_score != null ? "#7CC8E3" : "var(--mantine-color-dark-3)",
+                        background: game.playra_community_score != null
+                          ? "color-mix(in oklab, #7CC8E3 14%, transparent)"
+                          : "var(--mantine-color-dark-6)",
+                        boxShadow: game.playra_community_score != null
+                          ? "inset 0 0 0 1.5px color-mix(in oklab, #7CC8E3 45%, transparent)"
+                          : "inset 0 0 0 1.5px rgba(255,255,255,0.08)",
+                      }}>
+                      {game.playra_community_score != null ? game.playra_community_score.toFixed(1) : "—"}
+                    </Box>
+                    <Stack gap={1}>
+                      <Text fw={600} fz="sm">
+                        User score
+                      </Text>
+                      <Text c="dark.2" fz="xs">
+                        Playra
+                      </Text>
+                    </Stack>
+                  </Group>
                 </Group>
 
                 {/* Actions */}
                 <Group gap="xs" wrap="wrap">
                   <Button
-                    color={inWishlist ? "pink.8" : "violet"}
+                    color="violet"
                     variant={inWishlist ? "light" : "filled"}
                     leftSection={<HeartIcon size={17} fill={inWishlist} />}
                     loading={wishlistLoading}
@@ -279,11 +286,27 @@ function RouteComponent() {
                   </Group>
                 )}
 
+                {/* Description */}
                 {game.description_raw && (
-                  <Text c="dark.1" fz="sm" style={{ lineHeight: 1.6 }} lineClamp={6}>
-                    {game.description_raw}
-                  </Text>
+                  <Box>
+                    <Text c="dark.1" fz="sm" style={{ lineHeight: 1.7 }} lineClamp={3}>
+                      {game.description_raw}
+                    </Text>
+                    <button
+                      type="button"
+                      onClick={() => setShowDescription(true)}
+                      style={{
+                        background: 'none', border: 'none', padding: '6px 0 0',
+                        cursor: 'pointer', color: 'var(--mantine-color-violet-4)',
+                        fontSize: 13, fontWeight: 500, display: 'block',
+                        position: 'relative', zIndex: 9,
+                      }}
+                    >
+                      Read more
+                    </button>
+                  </Box>
                 )}
+
               </Stack>
             </Stack>
           </Grid.Col>
@@ -318,6 +341,66 @@ function RouteComponent() {
           </Box>
         )}
       </Container>
+
+      <Modal
+        opened={showDescription}
+        onClose={() => setShowDescription(false)}
+        size="lg"
+        padding={0}
+        withCloseButton={false}
+        styles={{ header: { display: 'none' }, body: { padding: 0 }, content: { overflow: 'hidden' } }}
+        radius="md"
+      >
+        {/* Blurred cover banner */}
+        <Box style={{ position: 'relative', height: 160, overflow: 'hidden', borderRadius: 'var(--mantine-radius-md) var(--mantine-radius-md) 0 0', flexShrink: 0 }}>
+          {game.background_image && (
+            <Box style={{
+              position: 'absolute', inset: 0,
+              backgroundImage: `url(${game.background_image})`,
+              backgroundSize: 'cover', backgroundPosition: 'center top',
+              filter: 'blur(6px) brightness(0.35)',
+              transform: 'scale(1.08)',
+            }} />
+          )}
+          <Box style={{
+            position: 'absolute', inset: 0,
+            background: 'linear-gradient(to bottom, rgba(10,15,31,0.2) 0%, rgba(10,15,31,0.92) 100%)',
+          }} />
+          <ActionIcon
+            variant="subtle" color="gray" size="md" radius="xl"
+            style={{ position: 'absolute', top: 12, right: 12, zIndex: 1, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}
+            onClick={() => setShowDescription(false)}
+          >
+            <XIcon size={14} />
+          </ActionIcon>
+          <Box style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0 24px 18px' }}>
+            <Group gap={6} mb={8}>
+              {game.genres.slice(0, 3).map((g) => (
+                <Badge key={g.id} variant="light" color="violet" radius="xl" size="xs">{g.name}</Badge>
+              ))}
+            </Group>
+            <Title order={2} style={{ fontSize: 22, letterSpacing: -0.6, lineHeight: 1.1 }}>{game.name}</Title>
+          </Box>
+        </Box>
+
+        {/* Content */}
+        <ScrollArea.Autosize mah={420}>
+          <Box p="xl" pt="lg">
+            {game.description ? (
+              <Box
+                fz="sm"
+                c="dark.1"
+                style={{ lineHeight: 1.8 }}
+                dangerouslySetInnerHTML={{ __html: game.description }}
+              />
+            ) : (
+              <Text c="dark.1" fz="sm" style={{ lineHeight: 1.8 }}>
+                {game.description_raw}
+              </Text>
+            )}
+          </Box>
+        </ScrollArea.Autosize>
+      </Modal>
 
       {showLists && (
         <AddToListModal
