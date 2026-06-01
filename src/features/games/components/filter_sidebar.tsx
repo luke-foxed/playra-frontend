@@ -1,8 +1,9 @@
 import { Box, Group, Text, Slider, UnstyledButton } from "@mantine/core"
 import { YearPickerInput } from "@mantine/dates"
 import { useState, useEffect, useRef } from "react"
-import { GENRES, PLATFORMS, chipBase } from "../constants"
+import { PLATFORMS, chipBase } from "../constants"
 import type { Status } from "../constants"
+import useGetGenres from "../hooks/useGetGenres"
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -79,6 +80,8 @@ function FilterSections({
   onStatusChange, onGenreToggle, onPlatformToggle, onMinScoreChange,
   onLocalFromChange, onLocalToChange,
 }: SectionsProps) {
+  const { data: genres = [] } = useGetGenres()
+
   return (
     <>
       <Box px={18} pt={22} pb={20}>
@@ -100,8 +103,8 @@ function FilterSections({
       <Box px={18} pt={20} pb={20}>
         <SectionLabel>Genre</SectionLabel>
         <Box style={{ display: "flex", flexWrap: "wrap", gap: "7px 6px" }}>
-          {GENRES.map((g) => (
-            <FilterChip key={g.slug} label={g.label} active={currentGenres.includes(g.slug)} onClick={() => onGenreToggle(g.slug)} />
+          {genres.map((g) => (
+            <FilterChip key={g.slug} label={g.name} active={currentGenres.includes(g.slug)} onClick={() => onGenreToggle(g.slug)} />
           ))}
         </Box>
       </Box>
