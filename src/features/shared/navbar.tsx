@@ -76,7 +76,9 @@ export default function Navbar() {
           <Group gap={6} style={{ flexShrink: 0 }} visibleFrom="sm">
             <Link to="/" className="nav-link" style={navLink('/')}>Home</Link>
             <Link to="/games" search={{ page: 1, page_size: 20 }} className="nav-link" style={navLink('/games')}>Games</Link>
+            <Link to="/lists" className="nav-link" style={navLink('/lists')}>Lists</Link>
             <Link to="/profile/$id" params={{ id: profile.id }} className="nav-link" style={navLink('/profile')}>Profile</Link>
+            {profile.role === 'admin' && <Link to="/admin" className="nav-link" style={navLink('/admin')}>Admin</Link>}
           </Group>
         )}
 
@@ -160,7 +162,9 @@ export default function Navbar() {
         <Stack gap="xs" mt="md">
           {profile && <Link to="/" style={drawerNavLink('/')} onClick={closeDrawer}>Home</Link>}
           {profile && <Link to="/games" search={{ page: 1, page_size: 20 }} style={drawerNavLink('/games')} onClick={closeDrawer}>Games</Link>}
+          {profile && <Link to="/lists" style={drawerNavLink('/lists')} onClick={closeDrawer}>Lists</Link>}
           {profile && <Link to="/profile/$id" params={{ id: profile.id }} style={drawerNavLink('/profile')} onClick={closeDrawer}>Profile</Link>}
+          {profile?.role === 'admin' && <Link to="/admin" style={drawerNavLink('/admin')} onClick={closeDrawer}>Admin</Link>}
         </Stack>
         {profile && (
           <Button variant="subtle" color="gray" fullWidth mt="xl" onClick={async () => { await signOut(); closeDrawer() }}>

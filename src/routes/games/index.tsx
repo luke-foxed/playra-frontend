@@ -11,7 +11,7 @@ import FilterSidebar from "../../features/games/components/filter_sidebar"
 import GameGrid from "../../features/games/components/game_grid"
 import { useUserLibrary } from "../../features/games/hooks/useUserLibrary"
 import routeProtector from "../../lib/route_protector"
-import { SearchIcon, FilterIcon, XIcon, ChevronIcon } from "../../features/shared/icons"
+import { SearchIcon, FilterIcon, XIcon, ChevronIcon, GamepadIcon } from "../../features/shared/icons"
 
 export const Route = createFileRoute("/games/")({
   component: RouteComponent,
@@ -100,8 +100,14 @@ function RouteComponent() {
 
   return (
     <Container size={1440} px="xl" pb="xl">
-      <Group justify="space-between" align="center" pt="xl" pb="xl" wrap="wrap" gap="md">
-        <Title order={1} style={{ letterSpacing: -1, fontSize: 34 }} w={{ base: '100%', sm: 'auto' }}>Browse games</Title>
+      <Group justify="space-between" align="flex-start" pt="xl" pb="xl" wrap="wrap" gap="md">
+        <Box w={{ base: '100%', sm: 'auto' }}>
+          <Group gap={12} align="center" mb={4}>
+            <Box style={{ color: 'var(--mantine-color-violet-4)', display: 'grid' }}><GamepadIcon size={26} /></Box>
+            <Title order={1} style={{ letterSpacing: -1, fontSize: 34 }}>Browse games</Title>
+          </Group>
+          <Text c="dimmed" size="sm">Find and explore games from across the library</Text>
+        </Box>
         <TextInput
           placeholder="Search games or studios…"
           leftSection={<SearchIcon size={18} style={{ color: "var(--mantine-color-dark-2)" }} />}

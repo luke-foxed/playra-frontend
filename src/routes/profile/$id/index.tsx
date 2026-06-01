@@ -52,7 +52,7 @@ function RouteComponent() {
     navigate({ to: '/profile/$id/lists/$listId', params: { id: params.id, listId } })
 
   return (
-    <Container size={1240} px={{ base: 'md', sm: 'xl' }} pb="xl" pt="xl">
+    <Container size={1440} px={{ base: 'md', sm: 'xl' }} pb="xl" pt="xl">
       <Group align="center" gap="xl" wrap="wrap" pb="xl" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }} mb="md">
         <HoverableAvatar
           src={profile.avatar_url ?? undefined}
@@ -146,7 +146,7 @@ function RouteComponent() {
           onSave={async (values) => {
             await updateProfile(params.id, values)
             qc.invalidateQueries(profileQueryOptions(params.id))
-            notifications.show({ message: 'Profile updated', color: 'green' })
+            notifications.show({ title: 'Profile updated', message: 'Your changes have been saved', color: 'green' })
             setEditOpen(false)
           }}
         />
@@ -158,7 +158,7 @@ function RouteComponent() {
           onCreate={async (name) => {
             await createList({ name, description: null, is_public: false })
             qc.invalidateQueries(listsQueryOptions())
-            notifications.show({ message: `Created "${name}"`, color: 'green' })
+            notifications.show({ title: 'List created', message: `"${name}" is ready`, color: 'green' })
             setNewListOpen(false)
           }}
         />
@@ -307,10 +307,18 @@ function ListCard({ list, onOpen }: { list: List; onOpen: () => void }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <Box style={{ position: 'relative', height: 132, background: 'var(--mantine-color-dark-7)', display: 'grid', placeItems: 'center' }}>
-        <Box style={{ color: 'var(--mantine-color-dark-2)', opacity: 0.4 }}>
-          <ListIcon size={24} />
-        </Box>
+      <Box style={{
+        position: 'relative', height: 132,
+        background: list.cover_url
+          ? `url('${list.cover_url}') center / cover no-repeat var(--mantine-color-dark-7)`
+          : 'linear-gradient(135deg, color-mix(in oklab, var(--mantine-color-violet-8) 30%, var(--mantine-color-dark-7)) 0%, var(--mantine-color-dark-7) 100%)',
+        display: 'grid', placeItems: 'center',
+      }}>
+        {!list.cover_url && (
+          <Box style={{ color: 'var(--mantine-color-violet-4)', opacity: 0.35 }}>
+            <ListIcon size={24} />
+          </Box>
+        )}
         {list.is_public && (
           <Box style={{
             position: 'absolute', top: 10, right: 10, zIndex: 2,

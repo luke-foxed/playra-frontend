@@ -1,7 +1,7 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router"
-import { useState } from "react"
-import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query"
-import { useMediaQuery, useHover } from "@mantine/hooks"
+import { useState, useEffect, useRef } from "react"
+import { useSuspenseQuery, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useMediaQuery, useHover, useHotkeys } from "@mantine/hooks"
 import {
   Box,
   Group,
@@ -22,13 +22,13 @@ import {
 } from "@mantine/core"
 import { Modal } from "@mantine/core"
 import { notifications } from "@mantine/notifications"
-import { gameQueryOptions, userGameQueryOptions, gamesQueryOptions } from "../../features/games/api/games"
+import { gameQueryOptions, userGameQueryOptions, similarGamesQueryOptions, gameScreenshotsQueryOptions } from "../../features/games/api/games"
 import { listsQueryOptions, addGamesToList, removeGamesFromList, createList } from "../../features/lists/api/lists"
 import routeProtector from "../../lib/route_protector"
 import MetacriticBadge from "../../features/shared/metacritic_badge"
 import StarRating from "../../features/shared/star_rating"
 import GameCard from "../../features/games/components/game_card"
-import { ArrowLeftIcon, HeartIcon, PlusIcon, SparkleIcon, ListIcon, GlobeIcon, LockIcon, GamepadIcon, XIcon } from "../../features/shared/icons"
+import { ArrowLeftIcon, HeartIcon, PlusIcon, SparkleIcon, ListIcon, GlobeIcon, LockIcon, GamepadIcon, XIcon, PhotoIcon, ChevronLeftIcon, ChevronIcon } from "../../features/shared/icons"
 import useWishlistToggle from "../../features/lists/hooks/useWishlistToggle"
 import useRateGame from "../../features/lists/hooks/useRateGame"
 import PlayraLoader from "../../features/shared/playra_loader"
@@ -57,11 +57,7 @@ function RouteComponent() {
   const { data: userGame } = useSuspenseQuery(userGameQueryOptions(id))
   const { data: myLists } = useSuspenseQuery(listsQueryOptions())
 
-  const genreId = game.genres[0]?.id
-  const { data: similarData } = useSuspenseQuery(
-    gamesQueryOptions({ page: 1, page_size: 6, genres: genreId ? String(genreId) : "0", ordering: "-metacritic" }),
-  )
-  const similar = similarData.results.filter((g) => g.id !== game.id).slice(0, 6)
+  const { data: similar } = useSuspenseQuery(similarGamesQueryOptions(id, game))
 
   const wishlist = myLists.find((l) => l.type === "wishlist")
   const ratingsList = myLists.find((l) => l.type === "ratings")
@@ -80,10 +76,21 @@ function RouteComponent() {
     background_image: game.background_image,
   }
 
+  const { data: screenshots } = useQuery(gameScreenshotsQueryOptions(id))
+  const screenshotsList = screenshots?.results ?? []
+  const baseImages = [game.background_image_additional, game.background_image]
+    .filter(Boolean)
+    .map((img, i) => ({ id: -(i + 1), image: img! }))
+  const allScreenshots = [...baseImages, ...screenshotsList]
+
   const { toggleWishlist, isLoading: wishlistLoading } = useWishlistToggle(id, wishlist)
   const { rateGame, isLoading: ratingLoading } = useRateGame(id, ratingsList)
   const [showLists, setShowLists] = useState(false)
   const [showDescription, setShowDescription] = useState(false)
+  const [galleryOpen, setGalleryOpen] = useState(false)
+  const [galleryIndex, setGalleryIndex] = useState(0)
+
+  const openGallery = (i: number) => { setGalleryIndex(i); setGalleryOpen(true) }
   const isMobile = useMediaQuery('(max-width: 48em)')
   const { hovered: backHovered, ref: backRef } = useHover<HTMLButtonElement>()
 
@@ -186,6 +193,39 @@ function RouteComponent() {
                     </Badge>
                   ))}
                 </Group>
+
+                {allScreenshots.length > 0 && (
+                  <Group
+                    gap={0}
+                    style={{ cursor: "pointer", width: "fit-content" }}
+                    onClick={() => openGallery(0)}
+                  >
+                    {allScreenshots.slice(0, 4).map((shot, i) => (
+                      <Box
+                        key={shot.id}
+                        style={{
+                          width: 40,
+                          height: 27,
+                          borderRadius: 5,
+                          overflow: "hidden",
+                          marginLeft: i === 0 ? 0 : -10,
+                          border: "2px solid var(--mantine-color-dark-7)",
+                          zIndex: 4 - i,
+                          position: "relative",
+                          transition: "transform 0.15s",
+                        }}
+                      >
+                        <img src={shot.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                      </Box>
+                    ))}
+                    <Group gap={5} ml={10}>
+                      <PhotoIcon size={13} style={{ color: "var(--mantine-color-dark-2)" }} />
+                      <Text fz="xs" c="dark.2" fw={500}>
+                        {allScreenshots.length} screenshot{allScreenshots.length !== 1 ? "s" : ""}
+                      </Text>
+                    </Group>
+                  </Group>
+                )}
 
                 {/* Scores */}
                 <Group gap="xl">
@@ -335,6 +375,71 @@ function RouteComponent() {
           </Grid.Col>
         </Grid>
 
+        {/* SCREENSHOTS */}
+        {allScreenshots.length > 0 && (
+          <Box mt={44}>
+            <Group gap={10} mb="md" justify="space-between" align="center">
+              <Group gap={10}>
+                <Box style={{ color: "var(--mantine-color-violet-4)", display: "grid" }}>
+                  <PhotoIcon size={18} />
+                </Box>
+                <Title order={2} style={{ letterSpacing: -0.6 }}>
+                  Screenshots
+                </Title>
+                {screenshots && screenshots.count > screenshotsList.length && (
+                  <Badge variant="outline" color="dark" radius="xl" size="sm">
+                    {screenshots.count + baseImages.length}
+                  </Badge>
+                )}
+              </Group>
+              <Button
+                variant="subtle"
+                color="gray"
+                size="xs"
+                leftSection={<PhotoIcon size={13} />}
+                onClick={() => openGallery(0)}
+              >
+                View all
+              </Button>
+            </Group>
+            <ScrollArea type="hover" scrollbarSize={4}>
+              <Group gap={8} wrap="nowrap" pb={8}>
+                {allScreenshots.map((shot, i) => (
+                  <Box
+                    key={shot.id}
+                    onClick={() => openGallery(i)}
+                    style={{
+                      position: "relative",
+                      width: isMobile ? 200 : 260,
+                      aspectRatio: "16/9",
+                      borderRadius: "var(--mantine-radius-md)",
+                      overflow: "hidden",
+                      cursor: "pointer",
+                      flexShrink: 0,
+                      boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08)",
+                    }}
+                  >
+                    <img
+                      src={shot.image}
+                      alt={`${game.name} screenshot ${i + 1}`}
+                      style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                    />
+                    <Box
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        background: "rgba(0,0,0,0)",
+                        transition: "background 0.15s",
+                      }}
+                      className="screenshot-hover-overlay"
+                    />
+                  </Box>
+                ))}
+              </Group>
+            </ScrollArea>
+          </Box>
+        )}
+
         {/* SIMILAR */}
         {similar.length > 0 && (
           <Box mt={44} mb={60}>
@@ -453,6 +558,16 @@ function RouteComponent() {
           }}
         />
       )}
+
+      {allScreenshots.length > 0 && (
+        <ScreenshotGalleryModal
+          opened={galleryOpen}
+          onClose={() => setGalleryOpen(false)}
+          screenshots={allScreenshots}
+          initialIndex={galleryIndex}
+          gameName={game.name}
+        />
+      )}
     </Box>
   )
 }
@@ -494,7 +609,7 @@ function AddToListModal({
       else await addGamesToList(listId, [gamePayload])
       onRefresh()
     } catch {
-      notifications.show({ message: "Failed to update list", color: "red" })
+      notifications.show({ title: "Error", message: "Failed to update list", color: "red" })
     } finally {
       setPending(null)
     }
@@ -506,12 +621,12 @@ function AddToListModal({
     try {
       const list = await createList({ name: nm, description: null, is_public: false })
       await addGamesToList(list.id, [gamePayload])
-      notifications.show({ message: `Created "${nm}" & added`, color: "green" })
+      notifications.show({ title: "List created", message: `"${nm}" created & game added`, color: "green" })
       onRefresh()
       setNewName("")
       setCreating(false)
     } catch {
-      notifications.show({ message: "Failed to create list", color: "red" })
+      notifications.show({ title: "Error", message: "Failed to create list", color: "red" })
     }
   }
 
@@ -586,6 +701,168 @@ function AddToListModal({
         <Button variant="outline" color="gray" fullWidth mt="sm" leftSection={<PlusIcon size={16} />} onClick={() => setCreating(true)}>
           Create new list
         </Button>
+      )}
+    </Modal>
+  )
+}
+
+function ScreenshotGalleryModal({
+  opened,
+  onClose,
+  screenshots,
+  initialIndex,
+  gameName,
+}: {
+  opened: boolean
+  onClose: () => void
+  screenshots: Array<{ id: number; image: string }>
+  initialIndex: number
+  gameName: string
+}) {
+  const [index, setIndex] = useState(initialIndex)
+  const isMobile = useMediaQuery("(max-width: 48em)")
+  const thumbRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (opened) setIndex(initialIndex)
+  }, [opened, initialIndex])
+
+  useEffect(() => {
+    thumbRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" })
+  }, [index])
+
+  const prev = () => setIndex((i) => (i - 1 + screenshots.length) % screenshots.length)
+  const next = () => setIndex((i) => (i + 1) % screenshots.length)
+
+  useHotkeys([
+    ["ArrowLeft", () => { if (opened) prev() }],
+    ["ArrowRight", () => { if (opened) next() }],
+  ])
+
+  const current = screenshots[index]
+
+  return (
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      size={isMobile ? "100%" : "90%"}
+      fullScreen={isMobile}
+      padding={0}
+      withCloseButton={false}
+      styles={{
+        content: { background: "rgba(8,10,18,0.97)", backdropFilter: "blur(24px)" },
+        body: { padding: 0 },
+        header: { display: "none" },
+      }}
+      radius="lg"
+    >
+      {/* Header */}
+      <Box p="md" pb="sm" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        <Group justify="space-between" align="center">
+          <Group gap={8}>
+            <PhotoIcon size={15} style={{ color: "var(--mantine-color-dark-3)" }} />
+            <Text fz="sm" c="dark.1" fw={500}>{gameName}</Text>
+          </Group>
+          <Group gap="xs">
+            <Text fz="sm" c="dark.3" ff="monospace">{index + 1} / {screenshots.length}</Text>
+            <ActionIcon variant="subtle" color="gray" radius="xl" onClick={onClose}>
+              <XIcon size={16} />
+            </ActionIcon>
+          </Group>
+        </Group>
+      </Box>
+
+      {/* Main image */}
+      <Box style={{ position: "relative" }} p="md" pb={screenshots.length > 1 ? "sm" : "md"}>
+        <Box
+          style={{
+            aspectRatio: "16/9",
+            width: "100%",
+            borderRadius: "var(--mantine-radius-md)",
+            overflow: "hidden",
+            background: "var(--mantine-color-dark-8)",
+          }}
+        >
+          <img
+            src={current.image}
+            alt={`${gameName} screenshot ${index + 1}`}
+            style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
+          />
+        </Box>
+
+        {screenshots.length > 1 && (
+          <>
+            <ActionIcon
+              variant="filled"
+              color="dark"
+              radius="xl"
+              size={isMobile ? "md" : "lg"}
+              style={{
+                position: "absolute",
+                left: isMobile ? 20 : 28,
+                top: "50%",
+                transform: "translateY(-50%)",
+                background: "rgba(0,0,0,0.65)",
+                backdropFilter: "blur(8px)",
+                border: "1px solid rgba(255,255,255,0.1)",
+              }}
+              onClick={prev}
+            >
+              <ChevronLeftIcon size={isMobile ? 16 : 20} />
+            </ActionIcon>
+            <ActionIcon
+              variant="filled"
+              color="dark"
+              radius="xl"
+              size={isMobile ? "md" : "lg"}
+              style={{
+                position: "absolute",
+                right: isMobile ? 20 : 28,
+                top: "50%",
+                transform: "translateY(-50%)",
+                background: "rgba(0,0,0,0.65)",
+                backdropFilter: "blur(8px)",
+                border: "1px solid rgba(255,255,255,0.1)",
+              }}
+              onClick={next}
+            >
+              <ChevronIcon size={isMobile ? 16 : 20} />
+            </ActionIcon>
+          </>
+        )}
+      </Box>
+
+      {/* Thumbnail strip */}
+      {screenshots.length > 1 && (
+        <ScrollArea type="hover" scrollbarSize={4}>
+          <Group gap={6} wrap="nowrap" px="md" pb="md">
+            {screenshots.map((shot, i) => (
+              <Box
+                key={shot.id}
+                ref={i === index ? thumbRef : undefined}
+                onClick={() => setIndex(i)}
+                style={{
+                  width: 72,
+                  aspectRatio: "16/9",
+                  borderRadius: 6,
+                  overflow: "hidden",
+                  cursor: "pointer",
+                  flexShrink: 0,
+                  outline: i === index ? "2px solid var(--mantine-color-violet-5)" : "1px solid rgba(255,255,255,0.08)",
+                  outlineOffset: i === index ? 2 : 0,
+                  opacity: i === index ? 1 : 0.45,
+                  transition: "opacity 0.15s, outline-color 0.1s",
+                }}
+              >
+                <img
+                  src={shot.image}
+                  alt=""
+                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                />
+              </Box>
+            ))}
+          </Group>
+        </ScrollArea>
       )}
     </Modal>
   )

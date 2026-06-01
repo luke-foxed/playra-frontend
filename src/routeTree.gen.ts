@@ -13,8 +13,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SignupIndexRouteImport } from './routes/signup/index'
 import { Route as RestrictedIndexRouteImport } from './routes/restricted/index'
 import { Route as LoginIndexRouteImport } from './routes/login/index'
+import { Route as ListsIndexRouteImport } from './routes/lists/index'
 import { Route as GamesIndexRouteImport } from './routes/games/index'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as ProfileIdRouteImport } from './routes/profile/$id'
+import { Route as ListsListIdRouteImport } from './routes/lists/$listId'
 import { Route as GamesIdRouteImport } from './routes/games/$id'
 import { Route as ProfileIdIndexRouteImport } from './routes/profile/$id/index'
 import { Route as ProfileIdListsListIdRouteImport } from './routes/profile/$id/lists/$listId'
@@ -39,14 +42,29 @@ const LoginIndexRoute = LoginIndexRouteImport.update({
   path: '/login/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ListsIndexRoute = ListsIndexRouteImport.update({
+  id: '/lists/',
+  path: '/lists/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GamesIndexRoute = GamesIndexRouteImport.update({
   id: '/games/',
   path: '/games/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfileIdRoute = ProfileIdRouteImport.update({
   id: '/profile/$id',
   path: '/profile/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ListsListIdRoute = ListsListIdRouteImport.update({
+  id: '/lists/$listId',
+  path: '/lists/$listId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GamesIdRoute = GamesIdRouteImport.update({
@@ -68,8 +86,11 @@ const ProfileIdListsListIdRoute = ProfileIdListsListIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/games/$id': typeof GamesIdRoute
+  '/lists/$listId': typeof ListsListIdRoute
   '/profile/$id': typeof ProfileIdRouteWithChildren
+  '/admin/': typeof AdminIndexRoute
   '/games/': typeof GamesIndexRoute
+  '/lists/': typeof ListsIndexRoute
   '/login/': typeof LoginIndexRoute
   '/restricted/': typeof RestrictedIndexRoute
   '/signup/': typeof SignupIndexRoute
@@ -79,7 +100,10 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/games/$id': typeof GamesIdRoute
+  '/lists/$listId': typeof ListsListIdRoute
+  '/admin': typeof AdminIndexRoute
   '/games': typeof GamesIndexRoute
+  '/lists': typeof ListsIndexRoute
   '/login': typeof LoginIndexRoute
   '/restricted': typeof RestrictedIndexRoute
   '/signup': typeof SignupIndexRoute
@@ -90,8 +114,11 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/games/$id': typeof GamesIdRoute
+  '/lists/$listId': typeof ListsListIdRoute
   '/profile/$id': typeof ProfileIdRouteWithChildren
+  '/admin/': typeof AdminIndexRoute
   '/games/': typeof GamesIndexRoute
+  '/lists/': typeof ListsIndexRoute
   '/login/': typeof LoginIndexRoute
   '/restricted/': typeof RestrictedIndexRoute
   '/signup/': typeof SignupIndexRoute
@@ -103,8 +130,11 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/games/$id'
+    | '/lists/$listId'
     | '/profile/$id'
+    | '/admin/'
     | '/games/'
+    | '/lists/'
     | '/login/'
     | '/restricted/'
     | '/signup/'
@@ -114,7 +144,10 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/games/$id'
+    | '/lists/$listId'
+    | '/admin'
     | '/games'
+    | '/lists'
     | '/login'
     | '/restricted'
     | '/signup'
@@ -124,8 +157,11 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/games/$id'
+    | '/lists/$listId'
     | '/profile/$id'
+    | '/admin/'
     | '/games/'
+    | '/lists/'
     | '/login/'
     | '/restricted/'
     | '/signup/'
@@ -136,8 +172,11 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   GamesIdRoute: typeof GamesIdRoute
+  ListsListIdRoute: typeof ListsListIdRoute
   ProfileIdRoute: typeof ProfileIdRouteWithChildren
+  AdminIndexRoute: typeof AdminIndexRoute
   GamesIndexRoute: typeof GamesIndexRoute
+  ListsIndexRoute: typeof ListsIndexRoute
   LoginIndexRoute: typeof LoginIndexRoute
   RestrictedIndexRoute: typeof RestrictedIndexRoute
   SignupIndexRoute: typeof SignupIndexRoute
@@ -173,6 +212,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/lists/': {
+      id: '/lists/'
+      path: '/lists'
+      fullPath: '/lists/'
+      preLoaderRoute: typeof ListsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/games/': {
       id: '/games/'
       path: '/games'
@@ -180,11 +226,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GamesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/profile/$id': {
       id: '/profile/$id'
       path: '/profile/$id'
       fullPath: '/profile/$id'
       preLoaderRoute: typeof ProfileIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lists/$listId': {
+      id: '/lists/$listId'
+      path: '/lists/$listId'
+      fullPath: '/lists/$listId'
+      preLoaderRoute: typeof ListsListIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/games/$id': {
@@ -228,8 +288,11 @@ const ProfileIdRouteWithChildren = ProfileIdRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GamesIdRoute: GamesIdRoute,
+  ListsListIdRoute: ListsListIdRoute,
   ProfileIdRoute: ProfileIdRouteWithChildren,
+  AdminIndexRoute: AdminIndexRoute,
   GamesIndexRoute: GamesIndexRoute,
+  ListsIndexRoute: ListsIndexRoute,
   LoginIndexRoute: LoginIndexRoute,
   RestrictedIndexRoute: RestrictedIndexRoute,
   SignupIndexRoute: SignupIndexRoute,

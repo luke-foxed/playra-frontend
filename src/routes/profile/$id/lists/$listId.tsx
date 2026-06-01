@@ -1,20 +1,22 @@
 import { createFileRoute, useNavigate, Link } from '@tanstack/react-router'
-import { useState, useContext } from 'react'
+import { useState, useContext, useRef, useEffect } from 'react'
 import { useSuspenseQuery, useQueryClient } from '@tanstack/react-query'
+import { useMediaQuery } from '@mantine/hooks'
 import {
   Box, Text, Title, Group, Stack, Button, SimpleGrid,
-  Container, TextInput, Modal, ActionIcon,
+  Container, TextInput, Modal, ActionIcon, Loader, Menu, BackgroundImage,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import {
   listDetailQueryOptions, listsQueryOptions,
   deleteList, updateList, removeGamesFromList, addGamesToList,
 } from '../../../../features/lists/api/lists'
+import type { ListDetail } from '../../../../features/lists/api/schemas'
 import { AuthContext } from '../../../../features/auth/providers/auth_provider'
 import GameCard from '../../../../features/games/components/game_card'
 import {
   EditIcon, PlusIcon, ListIcon, HeartIcon, PlayIcon,
-  GlobeIcon, LockIcon, XIcon, TrashIcon, ArrowLeftIcon, SearchIcon,
+  GlobeIcon, LockIcon, XIcon, TrashIcon, ArrowLeftIcon, SearchIcon, DotsIcon, ShuffleIcon,
 } from '../../../../features/shared/icons'
 import PlayraLoader from '../../../../features/shared/playra_loader'
 
@@ -24,6 +26,11 @@ export const Route = createFileRoute('/profile/$id/lists/$listId')({
     queryClient.ensureQueryData(listDetailQueryOptions(params.listId)),
   pendingComponent: () => <PlayraLoader />,
 })
+
+const TYPE_ACCENT: Record<string, string> = {
+  wishlist: '#F498C8',
+  ratings: '#F0C36B',
+}
 
 function ListTypeIcon({ type }: { type: string }) {
   if (type === 'wishlist') return <HeartIcon size={18} />
@@ -40,10 +47,11 @@ function RouteComponent() {
 
   const { data: detail, refetch } = useSuspenseQuery(listDetailQueryOptions(params.listId))
 
-  const [renaming, setRenaming] = useState(false)
-  const [nm, setNm] = useState(detail.name)
+  const [editOpen, setEditOpen] = useState(false)
   const [confirmDel, setConfirmDel] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
+  const [togglingPublic, setTogglingPublic] = useState(false)
+  const isMobile = useMediaQuery('(max-width: 48em)')
 
   const isLocked = detail.type !== 'custom'
 
@@ -54,32 +62,52 @@ function RouteComponent() {
 
   const removeGame = async (gameId: number) => {
     await removeGamesFromList(detail.id, [gameId])
-    notifications.show({ message: 'Removed from list', color: 'green' })
+    notifications.show({ title: 'Removed', message: 'Game removed from list', color: 'green' })
     refresh()
   }
 
   const doDelete = async () => {
     await deleteList(detail.id)
-    notifications.show({ message: 'List deleted', color: 'green' })
+    notifications.show({ title: 'Deleted', message: 'List has been deleted', color: 'green' })
     qc.invalidateQueries(listsQueryOptions())
     navigate({ to: '/profile/$id', params: { id: params.id } })
   }
 
-  const doRename = async () => {
-    await updateList(detail.id, { name: nm.trim() || detail.name, description: null, is_public: detail.is_public })
-    notifications.show({ message: 'List renamed', color: 'green' })
-    setRenaming(false)
-    refresh()
-  }
-
   const doTogglePublic = async () => {
-    await updateList(detail.id, { name: detail.name, description: null, is_public: !detail.is_public })
-    notifications.show({ message: detail.is_public ? 'Set to private' : 'Now public', color: 'green' })
-    refresh()
+    setTogglingPublic(true)
+    try {
+      await updateList(detail.id, { name: detail.name, description: detail.description ?? null, is_public: !detail.is_public })
+      notifications.show({ title: 'Visibility updated', message: detail.is_public ? 'List is now private' : 'List is now public', color: 'green' })
+      refresh()
+    } catch {
+      notifications.show({ title: 'Error', message: 'Failed to update visibility', color: 'red' })
+    } finally {
+      setTogglingPublic(false)
+    }
   }
 
   return (
-    <Container size={1240} px="xl" pb="xl">
+    <Box>
+      <Box style={{ position: 'relative', height: isMobile ? 160 : 220 }}>
+        {detail.cover_url ? (
+          <BackgroundImage src={detail.cover_url} pos="absolute" inset="0">
+            <Box pos="absolute" inset="0" bg="linear-gradient(to bottom, rgba(10,15,31,.3) 0%, rgba(10,15,31,.75) 60%, var(--mantine-color-dark-7) 100%)" />
+          </BackgroundImage>
+        ) : TYPE_ACCENT[detail.type] ? (
+          <>
+            <Box pos="absolute" inset="0" style={{ background: `linear-gradient(120deg, color-mix(in oklab, ${TYPE_ACCENT[detail.type]} 26%, transparent) 0%, transparent 58%), linear-gradient(160deg, var(--mantine-color-dark-6) 10%, var(--mantine-color-dark-8) 130%)` }} />
+            <Box pos="absolute" inset="0" style={{ opacity: 0.45, backgroundImage: `radial-gradient(color-mix(in oklab, ${TYPE_ACCENT[detail.type]} 30%, transparent) 1px, transparent 1.4px)`, backgroundSize: '22px 22px', WebkitMaskImage: 'linear-gradient(115deg, #000 0%, transparent 52%)', maskImage: 'linear-gradient(115deg, #000 0%, transparent 52%)' }} />
+          </>
+        ) : (
+          <Box
+            pos="absolute"
+            inset="0"
+            style={{ background: 'linear-gradient(135deg, color-mix(in oklab, var(--mantine-color-violet-8) 35%, var(--mantine-color-dark-7)) 0%, var(--mantine-color-dark-7) 100%)' }}
+          />
+        )}
+      </Box>
+
+      <Container size={1440} px="xl" pb="xl">
       <Link
         to="/profile/$id"
         params={{ id: params.id }}
@@ -89,7 +117,7 @@ function RouteComponent() {
           border: '1px solid rgba(255,255,255,0.08)', borderRadius: 999,
           padding: '9px 15px', fontSize: 13, fontWeight: 500,
           color: 'var(--mantine-color-dark-0)', textDecoration: 'none',
-          marginTop: 24,
+          marginTop: -20, position: 'relative', zIndex: 10,
         }}
       >
         <ArrowLeftIcon size={16} /> Your profile
@@ -99,20 +127,13 @@ function RouteComponent() {
         <Group gap="md" align="center">
           <Box style={{
             width: 56, height: 56, borderRadius: 'var(--mantine-radius-md)',
-            background: 'color-mix(in oklab, var(--mantine-color-violet-5) 18%, transparent)',
-            color: 'var(--mantine-color-violet-4)', display: 'grid', placeItems: 'center',
+            background: TYPE_ACCENT[detail.type] ? `color-mix(in oklab, ${TYPE_ACCENT[detail.type]} 18%, transparent)` : 'color-mix(in oklab, var(--mantine-color-violet-5) 18%, transparent)',
+            color: TYPE_ACCENT[detail.type] ?? 'var(--mantine-color-violet-4)', display: 'grid', placeItems: 'center',
           }}>
             <ListTypeIcon type={detail.type} />
           </Box>
           <Box>
-            {renaming ? (
-              <Group gap="xs">
-                <TextInput value={nm} autoFocus onChange={(e) => setNm(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && doRename()} size="sm" />
-                <Button size="sm" onClick={doRename}>Save</Button>
-              </Group>
-            ) : (
-              <Title order={1} style={{ letterSpacing: -0.9, fontSize: 30 }}>{detail.name}</Title>
-            )}
+            <Title order={1} style={{ letterSpacing: -0.9, fontSize: 30 }}>{detail.name}</Title>
             <Group gap="xs" mt={4}>
               <Text fz="sm" c="dark.2" ff="monospace">{detail.games.length} games</Text>
               {isLocked && <><Text c="dark.3">·</Text><Group gap={4}><LockIcon size={12} style={{ color: 'var(--mantine-color-dark-2)' }} /><Text fz="sm" c="dark.2">locked</Text></Group></>}
@@ -125,20 +146,43 @@ function RouteComponent() {
         </Group>
 
         {isOwn && (
-          <Group gap="xs" wrap="wrap">
-            <Button size="sm" leftSection={<PlusIcon size={15} />} onClick={() => setAddOpen(true)}>Add games</Button>
+          <Group gap="xs">
+            <Button size="sm" leftSection={<PlusIcon size={15} />} onClick={() => setAddOpen(true)}>
+              Add games
+            </Button>
             {!isLocked && (
-              <>
-                <ActionIcon variant="default" size="lg" onClick={() => { setNm(detail.name); setRenaming((r) => !r) }}>
-                  <EditIcon size={15} />
-                </ActionIcon>
-                <Button variant="default" size="sm" leftSection={detail.is_public ? <GlobeIcon size={15} /> : <LockIcon size={15} />} onClick={doTogglePublic}>
-                  {detail.is_public ? 'Public' : 'Private'}
-                </Button>
-                <ActionIcon variant="default" size="lg" color="red" onClick={() => setConfirmDel(true)}>
-                  <TrashIcon size={15} />
-                </ActionIcon>
-              </>
+              <Menu shadow="lg" width={200} position="bottom-end" withArrow>
+                <Menu.Target>
+                  <ActionIcon variant="default" size="lg" aria-label="More options">
+                    <DotsIcon size={15} />
+                  </ActionIcon>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  <Menu.Item
+                    leftSection={<EditIcon size={14} />}
+                    onClick={() => setEditOpen(true)}
+                  >
+                    Edit list
+                  </Menu.Item>
+                  <Menu.Item
+                    leftSection={
+                      togglingPublic
+                        ? <Loader size={14} color="violet" />
+                        : detail.is_public
+                          ? <LockIcon size={14} />
+                          : <GlobeIcon size={14} />
+                    }
+                    disabled={togglingPublic}
+                    onClick={doTogglePublic}
+                  >
+                    {detail.is_public ? 'Make private' : 'Make public'}
+                  </Menu.Item>
+                  <Menu.Divider />
+                  <Menu.Item leftSection={<TrashIcon size={14} />} color="red" onClick={() => setConfirmDel(true)}>
+                    Delete list
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
             )}
           </Group>
         )}
@@ -211,7 +255,15 @@ function RouteComponent() {
           <Button color="red" style={{ flex: 1 }} onClick={doDelete}>Delete list</Button>
         </Group>
       </Modal>
+
+      <EditListModal
+        opened={editOpen}
+        onClose={() => setEditOpen(false)}
+        detail={detail}
+        onSaved={refresh}
+      />
     </Container>
+    </Box>
   )
 }
 
@@ -224,15 +276,25 @@ function GamePickerModal({
   const [results, setResults] = useState<Array<{ id: number; name: string; background_image: string | null; released: string | null; genres: Array<{ id: number; name: string; slug: string }>; metacritic: number | null }>>([])
   const [added, setAdded] = useState<number[]>([...currentGameIds])
   const [pending, setPending] = useState<number | null>(null)
+  const [loading, setLoading] = useState(false)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const search = async (val: string) => {
-    if (!val.trim()) { setResults([]); return }
-    const { getGames } = await import('../../../../features/games/api/games')
-    const data = await getGames({ page: 1, page_size: 20, search: val })
-    setResults(data.results.map((g) => ({
-      id: g.id, name: g.name, background_image: g.background_image,
-      released: g.released, genres: g.genres, metacritic: g.metacritic,
-    })))
+  const search = (val: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (!val.trim()) { setResults([]); setLoading(false); return }
+    setLoading(true)
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const { getGames } = await import('../../../../features/games/api/games')
+        const data = await getGames({ page: 1, page_size: 20, search: val })
+        setResults(data.results.map((g) => ({
+          id: g.id, name: g.name, background_image: g.background_image,
+          released: g.released, genres: g.genres, metacritic: g.metacritic,
+        })))
+      } finally {
+        setLoading(false)
+      }
+    }, 300)
   }
 
   const toggle = async (game: typeof results[0]) => {
@@ -246,7 +308,7 @@ function GamePickerModal({
         setAdded((prev) => [...prev, game.id])
       }
       onRefresh()
-    } catch { notifications.show({ message: 'Failed to update list', color: 'red' }) }
+    } catch { notifications.show({ title: 'Error', message: 'Failed to update list', color: 'red' }) }
     finally { setPending(null) }
   }
 
@@ -261,7 +323,12 @@ function GamePickerModal({
         onChange={(e) => { setQ(e.target.value); search(e.target.value) }}
       />
       <Box style={{ maxHeight: 360, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {results.map((g) => {
+        {loading && (
+          <Box style={{ display: 'flex', justifyContent: 'center', padding: '24px 0' }}>
+            <Loader size="sm" color="violet" />
+          </Box>
+        )}
+        {!loading && results.map((g) => {
           const on = added.includes(g.id)
           return (
             <Box
@@ -278,9 +345,9 @@ function GamePickerModal({
               <Box
                 style={{
                   width: 34, height: 44, borderRadius: 6, flexShrink: 0,
-                  backgroundImage: g.background_image ? `url(${g.background_image})` : undefined,
+                  backgroundImage: g.background_image ? `url(${g.background_image})` : 'none',
+                  backgroundColor: 'var(--mantine-color-dark-5)',
                   backgroundSize: 'cover', backgroundPosition: 'center',
-                  background: g.background_image ? undefined : 'var(--mantine-color-dark-5)',
                   boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)',
                 }}
               />
@@ -301,11 +368,124 @@ function GamePickerModal({
             </Box>
           )
         })}
-        {q && results.length === 0 && (
+        {!loading && q && results.length === 0 && (
           <Text ta="center" c="dark.2" fz="sm" py="xl">No results for "{q}"</Text>
         )}
       </Box>
       <Button fullWidth onClick={onClose}>Done</Button>
     </Stack>
+  )
+}
+
+function EditListModal({
+  opened, onClose, detail, onSaved,
+}: {
+  opened: boolean
+  onClose: () => void
+  detail: ListDetail
+  onSaved: () => void
+}) {
+  const [name, setName] = useState(detail.name)
+  const [coverUrl, setCoverUrl] = useState(detail.cover_url ?? '')
+  const [saving, setSaving] = useState(false)
+  const [imgError, setImgError] = useState(false)
+
+  useEffect(() => {
+    if (opened) {
+      setName(detail.name)
+      setCoverUrl(detail.cover_url ?? '')
+      setImgError(false)
+    }
+  }, [opened, detail])
+
+  useEffect(() => { setImgError(false) }, [coverUrl])
+
+  const save = async () => {
+    setSaving(true)
+    try {
+      await updateList(detail.id, {
+        name: name.trim() || detail.name,
+        description: detail.description ?? null,
+        is_public: detail.is_public,
+        cover_url: coverUrl.trim() || null,
+      })
+      notifications.show({ title: 'Saved', message: 'List updated', color: 'green' })
+      onSaved()
+      onClose()
+    } catch {
+      notifications.show({ title: 'Error', message: 'Failed to save changes', color: 'red' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const previewUrl = coverUrl.trim() && !imgError ? coverUrl.trim() : null
+
+  return (
+    <Modal opened={opened} onClose={onClose} title="Edit list" size="sm">
+      <Stack gap="md">
+        <TextInput
+          label="Name"
+          value={name}
+          autoFocus
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && save()}
+        />
+
+        <Box>
+          <Text fz="xs" fw={500} c="dark.1" mb={6}>Cover image</Text>
+          <Box
+            style={{
+              height: 100, borderRadius: 'var(--mantine-radius-md)', overflow: 'hidden',
+              marginBottom: 8, boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)',
+              background: previewUrl ? undefined
+                : 'linear-gradient(135deg, color-mix(in oklab, var(--mantine-color-violet-8) 40%, var(--mantine-color-dark-6)) 0%, var(--mantine-color-dark-6) 100%)',
+              display: 'grid', placeItems: 'center',
+            }}
+          >
+            {previewUrl ? (
+              <img
+                src={previewUrl}
+                alt="cover preview"
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                onError={() => setImgError(true)}
+              />
+            ) : (
+              <Box style={{ color: 'var(--mantine-color-violet-4)', opacity: 0.4 }}>
+                <ListIcon size={28} />
+              </Box>
+            )}
+          </Box>
+          <Group gap={6} align="flex-end">
+            <TextInput
+              placeholder="https://example.com/image.jpg"
+              value={coverUrl}
+              style={{ flex: 1 }}
+              onChange={(e) => setCoverUrl(e.target.value)}
+            />
+            <ActionIcon
+              variant="default"
+              size="lg"
+              title="Generate random cover"
+              onClick={() => {
+                const seed = Math.random().toString(36).slice(2, 10)
+                const colors = '7c3aed,8b5cf6,6d28d9,4f46e5,6366f1,3b82f6,2563eb,0284c7,06b6d4,0891b2,7cc8e3,0d9488,14b8a6,7e22ce,c026d3,db2777'
+                setCoverUrl(`https://api.dicebear.com/10.x/glass/svg?seed=${seed}&backgroundColor=${colors}&backgroundColorFill=linear`)
+              }}
+            >
+              <ShuffleIcon size={15} />
+            </ActionIcon>
+          </Group>
+          {coverUrl.trim() && imgError && (
+            <Text fz="xs" c="red.4" mt={4}>Image couldn't load — check the URL</Text>
+          )}
+        </Box>
+
+        <Group justify="flex-end" gap="xs">
+          <Button variant="default" onClick={onClose}>Cancel</Button>
+          <Button loading={saving} onClick={save}>Save</Button>
+        </Group>
+      </Stack>
+    </Modal>
   )
 }

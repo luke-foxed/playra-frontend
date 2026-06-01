@@ -64,7 +64,7 @@ function RouteComponent() {
       router.history.push('/')
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Signup failed'
-      notifications.show({ message: msg, color: 'red' })
+      notifications.show({ title: 'Signup failed', message: msg, color: 'red' })
     }
   }
 

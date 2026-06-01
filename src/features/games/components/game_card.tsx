@@ -32,7 +32,7 @@ const PLATFORM_PRIORITY: Record<string, number> = {
   linux: 10,
 }
 
-const MAX_PLATFORMS = 3
+const MAX_PLATFORMS = 2
 
 type Props = {
   id: number
