@@ -1,10 +1,10 @@
 import { createFileRoute, useNavigate, Link } from '@tanstack/react-router'
-import { useState, useContext, useRef, useEffect } from 'react'
+import { useState, useContext, useRef, useEffect, useMemo } from 'react'
 import { useSuspenseQuery, useQueryClient } from '@tanstack/react-query'
 import { useMediaQuery } from '@mantine/hooks'
 import {
   Box, Text, Title, Group, Stack, Button, SimpleGrid,
-  Container, TextInput, Modal, ActionIcon, Loader, Menu, BackgroundImage,
+  Container, TextInput, Select, Modal, ActionIcon, Loader, Menu, BackgroundImage,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import {
@@ -51,7 +51,27 @@ function RouteComponent() {
   const [confirmDel, setConfirmDel] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
   const [togglingPublic, setTogglingPublic] = useState(false)
+  const [searchQ, setSearchQ] = useState('')
+  const [sortOrder, setSortOrder] = useState('rating-desc')
   const isMobile = useMediaQuery('(max-width: 48em)')
+
+  const isRatingsList = detail.type === 'ratings'
+  const displayedGames = useMemo(() => {
+    let games = [...detail.games]
+    if (isRatingsList && searchQ.trim()) {
+      const q = searchQ.toLowerCase()
+      games = games.filter((g) => g.name.toLowerCase().includes(q))
+    }
+    if (isRatingsList) {
+      games.sort((a, b) => {
+        if (sortOrder === 'rating-asc') return (a.user_rating ?? 99) - (b.user_rating ?? 99)
+        if (sortOrder === 'name-asc') return a.name.localeCompare(b.name)
+        if (sortOrder === 'name-desc') return b.name.localeCompare(a.name)
+        return (b.user_rating ?? -1) - (a.user_rating ?? -1)
+      })
+    }
+    return games
+  }, [detail.games, isRatingsList, searchQ, sortOrder])
 
   const isLocked = detail.type !== 'custom'
 
@@ -195,15 +215,45 @@ function RouteComponent() {
         </Group>
       )}
 
+      {isRatingsList && detail.games.length > 0 && (
+        <Group gap="sm" mb="md" align="center">
+          <TextInput
+            placeholder="Search games…"
+            leftSection={<SearchIcon size={15} />}
+            value={searchQ}
+            onChange={(e) => setSearchQ(e.target.value)}
+            size="sm"
+            style={{ flex: 1, maxWidth: 280 }}
+          />
+          <Select
+            size="sm"
+            value={sortOrder}
+            onChange={(v) => v && setSortOrder(v)}
+            data={[
+              { value: 'rating-desc', label: 'Rating: High → Low' },
+              { value: 'rating-asc', label: 'Rating: Low → High' },
+              { value: 'name-asc', label: 'Name: A–Z' },
+              { value: 'name-desc', label: 'Name: Z–A' },
+            ]}
+            style={{ width: 190 }}
+            allowDeselect={false}
+          />
+        </Group>
+      )}
+
       {detail.games.length === 0 ? (
         <Box ta="center" py={64}>
           <Text fw={600} c="dark.1" mb={6}>This list is empty</Text>
           <Text c="dark.2" fz="sm">Add some games to get started.</Text>
           {isOwn && <Button size="sm" mt="md" leftSection={<PlusIcon size={15} />} onClick={() => setAddOpen(true)}>Add games</Button>}
         </Box>
+      ) : displayedGames.length === 0 ? (
+        <Box ta="center" py={64}>
+          <Text fw={600} c="dark.1" mb={6}>No results for "{searchQ}"</Text>
+        </Box>
       ) : (
         <SimpleGrid cols={{ base: 2, xs: 3, sm: 3, md: 4, lg: 5 }} spacing="md" mt="md">
-          {detail.games.map((g) => (
+          {displayedGames.map((g) => (
             <Box key={g.game_id} style={{ position: 'relative' }}>
               <GameCard
                 id={g.game_id}

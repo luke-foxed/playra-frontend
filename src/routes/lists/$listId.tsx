@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
+import { useState, useMemo } from "react"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { useMediaQuery } from "@mantine/hooks"
-import { Box, Text, Title, Group, Container, Avatar, SimpleGrid, BackgroundImage } from "@mantine/core"
+import { Box, Text, Title, Group, Container, Avatar, SimpleGrid, BackgroundImage, TextInput, Select } from "@mantine/core"
 import { listDetailQueryOptions } from "../../features/lists/api/lists"
 import routeProtector from "../../lib/route_protector"
 import PlayraLoader from "../../features/shared/playra_loader"
 import GameCard from "../../features/games/components/game_card"
-import { ArrowLeftIcon, ListIcon, GlobeIcon } from "../../features/shared/icons"
+import { ArrowLeftIcon, ListIcon, GlobeIcon, SearchIcon } from "../../features/shared/icons"
 
 export const Route = createFileRoute("/lists/$listId")({
   component: RouteComponent,
@@ -34,6 +35,27 @@ function RouteComponent() {
 
   const creator = detail.profiles
   const displayName = creator?.username ?? "unknown"
+
+  const [searchQ, setSearchQ] = useState('')
+  const [sortOrder, setSortOrder] = useState('rating-desc')
+
+  const isRatingsList = detail.type === 'ratings'
+  const displayedGames = useMemo(() => {
+    let games = [...detail.games]
+    if (isRatingsList && searchQ.trim()) {
+      const q = searchQ.toLowerCase()
+      games = games.filter((g) => g.name.toLowerCase().includes(q))
+    }
+    if (isRatingsList) {
+      games.sort((a, b) => {
+        if (sortOrder === 'rating-asc') return (a.user_rating ?? 99) - (b.user_rating ?? 99)
+        if (sortOrder === 'name-asc') return a.name.localeCompare(b.name)
+        if (sortOrder === 'name-desc') return b.name.localeCompare(a.name)
+        return (b.user_rating ?? -1) - (a.user_rating ?? -1)
+      })
+    }
+    return games
+  }, [detail.games, isRatingsList, searchQ, sortOrder])
 
   return (
     <Box>
@@ -116,13 +138,43 @@ function RouteComponent() {
         </Box>
       </Group>
 
+      {isRatingsList && detail.games.length > 0 && (
+        <Group gap="sm" mb="md" align="center">
+          <TextInput
+            placeholder="Search games…"
+            leftSection={<SearchIcon size={15} />}
+            value={searchQ}
+            onChange={(e) => setSearchQ(e.target.value)}
+            size="sm"
+            style={{ flex: 1, maxWidth: 280 }}
+          />
+          <Select
+            size="sm"
+            value={sortOrder}
+            onChange={(v) => v && setSortOrder(v)}
+            data={[
+              { value: 'rating-desc', label: 'Rating: High → Low' },
+              { value: 'rating-asc', label: 'Rating: Low → High' },
+              { value: 'name-asc', label: 'Name: A–Z' },
+              { value: 'name-desc', label: 'Name: Z–A' },
+            ]}
+            style={{ width: 190 }}
+            allowDeselect={false}
+          />
+        </Group>
+      )}
+
       {detail.games.length === 0 ? (
         <Box ta="center" py={64}>
           <Text fw={600} c="dark.1" mb={6}>This list is empty</Text>
         </Box>
+      ) : displayedGames.length === 0 ? (
+        <Box ta="center" py={64}>
+          <Text fw={600} c="dark.1" mb={6}>No results for "{searchQ}"</Text>
+        </Box>
       ) : (
         <SimpleGrid cols={{ base: 2, xs: 3, sm: 3, md: 4, lg: 5 }} spacing="md" mt="md">
-          {detail.games.map((g) => (
+          {displayedGames.map((g) => (
             <GameCard
               key={g.game_id}
               id={g.game_id}
