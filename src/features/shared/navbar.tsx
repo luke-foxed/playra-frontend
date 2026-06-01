@@ -1,6 +1,7 @@
 import { useContext, useEffect, useState } from 'react'
 import { Link, useRouterState, useNavigate } from '@tanstack/react-router'
-import { Group, Text, Button, UnstyledButton, Avatar, Box } from '@mantine/core'
+import { Group, Text, Button, UnstyledButton, Avatar, Box, Drawer, ActionIcon, Burger, Stack } from '@mantine/core'
+import { useDisclosure } from '@mantine/hooks'
 import { AuthContext } from '../auth/providers/auth_provider'
 import supabase from '../../lib/supabase_client'
 import Logo from './logo'
@@ -19,6 +20,7 @@ function avatarColor(str: string) {
 export default function Navbar() {
   const { profile } = useContext(AuthContext)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [drawerOpen, { open: openDrawer, close: closeDrawer }] = useDisclosure(false)
   const location = useRouterState({ select: (s) => s.location.pathname })
   const navigate = useNavigate()
 
@@ -46,6 +48,18 @@ export default function Navbar() {
     transition: 'background 0.15s, color 0.15s', textDecoration: 'none', whiteSpace: 'nowrap' as const,
   })
 
+  const drawerNavLink = (path: string) => ({
+    ...navLink(path),
+    display: 'block',
+    width: '100%',
+    padding: '10px 14px',
+  })
+
+  const signOut = async () => {
+    await supabase.auth.signOut()
+    navigate({ to: '/login' })
+  }
+
   return (
     <>
       <Group px="xl" h="100%" justify="space-between" maw={1440} mx="auto" wrap="nowrap" gap="lg">
@@ -59,18 +73,19 @@ export default function Navbar() {
         </UnstyledButton>
 
         {profile && (
-          <Group gap={6} style={{ flexShrink: 0 }}>
+          <Group gap={6} style={{ flexShrink: 0 }} visibleFrom="sm">
             <Link to="/" className="nav-link" style={navLink('/')}>Home</Link>
             <Link to="/games" search={{ page: 1, page_size: 20 }} className="nav-link" style={navLink('/games')}>Games</Link>
             <Link to="/profile/$id" params={{ id: profile.id }} className="nav-link" style={navLink('/profile')}>Profile</Link>
           </Group>
         )}
 
-        <Box style={{ flex: 1 }} />
+        <Box style={{ flex: 1 }} visibleFrom="sm" />
 
         {profile && (
           <UnstyledButton
             onClick={() => setSearchOpen(true)}
+            visibleFrom="sm"
             style={{
               display: 'flex', alignItems: 'center', gap: 9,
               background: 'var(--mantine-color-dark-6)',
@@ -87,6 +102,18 @@ export default function Navbar() {
           </UnstyledButton>
         )}
 
+        {/* Mobile: search icon + burger */}
+        <Group gap="xs" hiddenFrom="sm" style={{ flex: 1, justifyContent: 'flex-end' }}>
+          {profile && (
+            <ActionIcon variant="subtle" color="gray" size="lg" onClick={() => setSearchOpen(true)}>
+              <SearchIcon size={18} />
+            </ActionIcon>
+          )}
+          {profile && (
+            <Burger opened={drawerOpen} onClick={openDrawer} size="sm" color="var(--mantine-color-dark-1)" />
+          )}
+        </Group>
+
         {profile ? (
           <Group gap="xs" style={{ flexShrink: 0 }}>
             <UnstyledButton component={LinkCast} to="/profile/$id" params={{ id: profile.id }} className="avatar-btn">
@@ -101,7 +128,7 @@ export default function Navbar() {
                 {!profile.avatar_url && ((profile?.username ?? profile.email)[0] ?? '?').toUpperCase()}
               </Avatar>
             </UnstyledButton>
-            <Button variant="subtle" color="gray" size="sm" onClick={async () => { await supabase.auth.signOut(); navigate({ to: '/login' }) }}>
+            <Button variant="subtle" color="gray" size="sm" visibleFrom="sm" onClick={signOut}>
               Sign out
             </Button>
           </Group>
@@ -112,6 +139,35 @@ export default function Navbar() {
           </Group>
         )}
       </Group>
+
+      <Drawer
+        opened={drawerOpen}
+        onClose={closeDrawer}
+        position="left"
+        size="xs"
+        padding="xl"
+        styles={{
+          content: { background: 'var(--mantine-color-dark-7)' },
+          header: { background: 'var(--mantine-color-dark-7)' },
+        }}
+        title={
+          <Group gap={10}>
+            <Logo size={28} />
+            <Text fw={700} fz={20} style={{ letterSpacing: -0.6 }} c="dark.0">playra</Text>
+          </Group>
+        }
+      >
+        <Stack gap="xs" mt="md">
+          {profile && <Link to="/" style={drawerNavLink('/')} onClick={closeDrawer}>Home</Link>}
+          {profile && <Link to="/games" search={{ page: 1, page_size: 20 }} style={drawerNavLink('/games')} onClick={closeDrawer}>Games</Link>}
+          {profile && <Link to="/profile/$id" params={{ id: profile.id }} style={drawerNavLink('/profile')} onClick={closeDrawer}>Profile</Link>}
+        </Stack>
+        {profile && (
+          <Button variant="subtle" color="gray" fullWidth mt="xl" onClick={async () => { await signOut(); closeDrawer() }}>
+            Sign out
+          </Button>
+        )}
+      </Drawer>
 
       {searchOpen && <SearchModal onClose={() => setSearchOpen(false)} />}
     </>

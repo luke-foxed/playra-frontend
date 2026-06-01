@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useQuery, keepPreviousData } from "@tanstack/react-query"
 import { useState } from "react"
-import { Box, Text, Title, Group, Container, Select, TextInput, Anchor, UnstyledButton } from "@mantine/core"
+import { Box, Text, Title, Group, Container, Select, TextInput, Anchor, UnstyledButton, Drawer } from "@mantine/core"
+import { useMediaQuery, useDisclosure } from "@mantine/hooks"
 import { gamesQueryOptions } from "../../features/games/api/games"
 import { GamesSearchSchema } from "../../features/games/api/schemas"
 import { SORT_OPTIONS } from "../../features/games/constants"
@@ -27,6 +28,8 @@ function RouteComponent() {
   })
   const { wishlistedIds } = useUserLibrary()
   const [filtersOpen, setFiltersOpen] = useState(true)
+  const isMobile = useMediaQuery('(max-width: 48em)')
+  const [drawerOpen, { open: openDrawer, close: closeDrawer }] = useDisclosure(false)
 
   const ordering = search.ordering ?? "-rating"
   const currentPage = search.page ?? 1
@@ -81,10 +84,24 @@ function RouteComponent() {
   const clearAll = () => navigate({ search: { page: 1, page_size: search.page_size ?? 20 } })
   const hasFilters = activeFilterCount > 0 || !!search.search
 
+  const sidebarProps = {
+    currentStatus,
+    currentGenres,
+    currentPlatforms,
+    minScore,
+    dateFrom,
+    dateTo,
+    onStatusChange: setStatus,
+    onGenreToggle: toggleGenre,
+    onPlatformToggle: togglePlatform,
+    onMinScoreChange: (val: number) => navigate({ search: (prev) => ({ ...prev, metacritic: val ? `${val},100` : undefined, page: 1 }) }),
+    onDateRangeChange: handleDateRange,
+  }
+
   return (
     <Container size={1440} px="xl" pb="xl">
       <Group justify="space-between" align="center" pt="xl" pb="xl" wrap="wrap" gap="md">
-        <Title order={1} style={{ letterSpacing: -1, fontSize: 34 }}>Browse games</Title>
+        <Title order={1} style={{ letterSpacing: -1, fontSize: 34 }} w={{ base: '100%', sm: 'auto' }}>Browse games</Title>
         <TextInput
           placeholder="Search games or studios…"
           leftSection={<SearchIcon size={18} style={{ color: "var(--mantine-color-dark-2)" }} />}
@@ -99,37 +116,26 @@ function RouteComponent() {
           onChange={(e) => navigate({ search: (prev) => ({ ...prev, search: e.target.value || undefined, page: 1 }) })}
           radius="xl"
           size="md"
-          style={{ minWidth: 340, maxWidth: 440, flex: 1 }}
+          style={{ maxWidth: 440, flex: 1, minWidth: 0 }}
         />
       </Group>
 
-      <Group align="flex-start" gap="xl" wrap="nowrap">
-        <FilterSidebar
-          open={filtersOpen}
-          currentStatus={currentStatus}
-          currentGenres={currentGenres}
-          currentPlatforms={currentPlatforms}
-          minScore={minScore}
-          dateFrom={dateFrom}
-          dateTo={dateTo}
-          onStatusChange={setStatus}
-          onGenreToggle={toggleGenre}
-          onPlatformToggle={togglePlatform}
-          onMinScoreChange={(val) => navigate({ search: (prev) => ({ ...prev, metacritic: val ? `${val},100` : undefined, page: 1 }) })}
-          onDateRangeChange={handleDateRange}
-        />
+      <Group align="flex-start" gap="xl" wrap="wrap">
+        {!isMobile && (
+          <FilterSidebar open={filtersOpen} {...sidebarProps} />
+        )}
 
         <Box style={{ flex: 1, minWidth: 0 }}>
           <Group justify="space-between" mb="md" align="center">
             <Group gap="sm" align="center">
               <UnstyledButton
-                onClick={() => setFiltersOpen((o) => !o)}
+                onClick={() => isMobile ? openDrawer() : setFiltersOpen((o) => !o)}
                 style={{
                   display: "flex", alignItems: "center", gap: 6,
                   padding: "6px 12px", borderRadius: 20,
-                  border: `1px solid ${filtersOpen ? "rgba(139,107,255,0.5)" : "rgba(255,255,255,0.09)"}`,
-                  background: filtersOpen ? "color-mix(in oklab, #8B6BFF 15%, #131A38)" : "rgba(255,255,255,0.04)",
-                  color: filtersOpen ? "#C2B5FF" : "#6B6E97",
+                  border: `1px solid ${filtersOpen && !isMobile ? "rgba(139,107,255,0.5)" : "rgba(255,255,255,0.09)"}`,
+                  background: filtersOpen && !isMobile ? "color-mix(in oklab, #8B6BFF 15%, #131A38)" : "rgba(255,255,255,0.04)",
+                  color: filtersOpen && !isMobile ? "#C2B5FF" : "#6B6E97",
                   transition: "all 0.15s ease", fontSize: 12, fontWeight: 600,
                   fontFamily: "'Sora', system-ui, sans-serif", whiteSpace: "nowrap",
                 }}>
@@ -143,7 +149,9 @@ function RouteComponent() {
                     {activeFilterCount}
                   </Box>
                 )}
-                <ChevronIcon size={11} style={{ transform: filtersOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.25s ease" }} />
+                {!isMobile && (
+                  <ChevronIcon size={11} style={{ transform: filtersOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.25s ease" }} />
+                )}
               </UnstyledButton>
 
               <Text fz="sm" c="dark.2" ff="monospace">
@@ -158,7 +166,7 @@ function RouteComponent() {
             </Group>
 
             <Group gap="sm">
-              <Text fz="sm" c="dark.2">Sort</Text>
+              <Text fz="sm" c="dark.2" visibleFrom="xs">Sort</Text>
               <Select
                 data={SORT_OPTIONS}
                 value={ordering}
@@ -180,6 +188,21 @@ function RouteComponent() {
           />
         </Box>
       </Group>
+
+      <Drawer
+        opened={drawerOpen}
+        onClose={closeDrawer}
+        position="bottom"
+        size="85%"
+        radius="lg"
+        styles={{
+          content: { background: 'var(--mantine-color-dark-7)' },
+          header: { background: 'var(--mantine-color-dark-7)' },
+        }}
+        title={<Text fw={700} fz={18}>Filters</Text>}
+      >
+        <FilterSidebar open={true} inDrawer {...sidebarProps} />
+      </Drawer>
 
       <Box h={60} />
     </Container>

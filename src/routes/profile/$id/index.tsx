@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState, useContext } from 'react'
 import { useSuspenseQuery, useQueryClient, useQuery } from '@tanstack/react-query'
+import { useMediaQuery } from '@mantine/hooks'
 import {
   Box, Text, Title, Group, Stack, Avatar, Button, SimpleGrid,
   Container, Anchor, TextInput, Modal,
@@ -43,6 +44,7 @@ function RouteComponent() {
   const { data: profile } = useSuspenseQuery(profileQueryOptions(params.id))
   const { data: lists } = useSuspenseQuery(listsQueryOptions())
 
+  const isMobile = useMediaQuery('(max-width: 48em)')
   const [editOpen, setEditOpen] = useState(false)
   const [newListOpen, setNewListOpen] = useState(false)
 
@@ -50,8 +52,8 @@ function RouteComponent() {
     navigate({ to: '/profile/$id/lists/$listId', params: { id: params.id, listId } })
 
   return (
-    <Container size={1240} px="xl" pb="xl" pt="xl">
-      <Group align="center" gap="xl" pb="xl" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }} mb="md">
+    <Container size={1240} px={{ base: 'md', sm: 'xl' }} pb="xl" pt="xl">
+      <Group align="center" gap="xl" wrap="wrap" pb="xl" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }} mb="md">
         <HoverableAvatar
           src={profile.avatar_url ?? undefined}
           alt={profile.username ?? profile.email}
@@ -59,9 +61,10 @@ function RouteComponent() {
           bg={!profile.avatar_url ? avatarColor(profile.username ?? profile.email) : undefined}
           editable={isOwn}
           onEdit={() => setEditOpen(true)}
+          size={isMobile ? 72 : 96}
         />
         <Stack gap={4} style={{ flex: 1 }}>
-          <Title order={1} style={{ letterSpacing: -1, fontSize: 32 }}>{profile.username ?? profile.email}</Title>
+          <Title order={1} fz={{ base: 22, sm: 32 }} style={{ letterSpacing: -1 }}>{profile.username ?? profile.email}</Title>
           <Group gap="md" align="center">
             {profile.username && <Text fz="sm" c="dark.2" ff="monospace">@{profile.username}</Text>}
             <Text fz="sm" c="dark.3" ff="monospace">{profile.email}</Text>
@@ -165,10 +168,10 @@ function RouteComponent() {
 }
 
 function HoverableAvatar({
-  src, alt, fallbackChar, bg, editable, onEdit,
+  src, alt, fallbackChar, bg, editable, onEdit, size = 96,
 }: {
   src?: string; alt: string; fallbackChar: string
-  bg?: string; editable: boolean; onEdit: () => void
+  bg?: string; editable: boolean; onEdit: () => void; size?: number
 }) {
   const [hovered, setHovered] = useState(false)
   return (
@@ -181,7 +184,7 @@ function HoverableAvatar({
       <Avatar
         src={src}
         alt={alt}
-        size={96}
+        size={size}
         radius="xl"
         style={{ transform: 'translateZ(0)', ...(bg ? { background: bg } : {}) }}
         color="violet"

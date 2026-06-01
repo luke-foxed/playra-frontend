@@ -69,7 +69,7 @@ function RouteComponent() {
   }
 
   return (
-    <Center style={{ minHeight: '100vh' }} p="xl">
+    <Center style={{ minHeight: '100dvh' }} p="xl">
       <Stack align="center" gap="xl" w="100%" maw={420}>
         <Stack align="center" gap={10}>
           <Logo size={52} />

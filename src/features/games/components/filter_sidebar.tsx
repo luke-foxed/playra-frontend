@@ -55,8 +55,126 @@ function StatusChip({ label, active, onClick }: { label: string; active: boolean
   )
 }
 
+type SectionsProps = {
+  currentStatus: Status
+  currentGenres: string[]
+  currentPlatforms: string[]
+  minScore: number
+  localFrom: string
+  localTo: string
+  onStatusChange: (s: Status) => void
+  onGenreToggle: (slug: string) => void
+  onPlatformToggle: (id: string) => void
+  onMinScoreChange: (val: number) => void
+  onLocalFromChange: (v: string) => void
+  onLocalToChange: (v: string) => void
+}
+
+function Divider() {
+  return <Box style={{ height: 1, background: "rgba(255,255,255,0.05)" }} />
+}
+
+function FilterSections({
+  currentStatus, currentGenres, currentPlatforms, minScore, localFrom, localTo,
+  onStatusChange, onGenreToggle, onPlatformToggle, onMinScoreChange,
+  onLocalFromChange, onLocalToChange,
+}: SectionsProps) {
+  return (
+    <>
+      <Box px={18} pt={22} pb={20}>
+        <SectionLabel>Status</SectionLabel>
+        <Group gap={6}>
+          {(["all", "released", "upcoming"] as Status[]).map((s) => (
+            <StatusChip
+              key={s}
+              label={s.charAt(0).toUpperCase() + s.slice(1)}
+              active={currentStatus === s}
+              onClick={() => onStatusChange(s)}
+            />
+          ))}
+        </Group>
+      </Box>
+
+      <Divider />
+
+      <Box px={18} pt={20} pb={20}>
+        <SectionLabel>Genre</SectionLabel>
+        <Box style={{ display: "flex", flexWrap: "wrap", gap: "7px 6px" }}>
+          {GENRES.map((g) => (
+            <FilterChip key={g.slug} label={g.label} active={currentGenres.includes(g.slug)} onClick={() => onGenreToggle(g.slug)} />
+          ))}
+        </Box>
+      </Box>
+
+      <Divider />
+
+      <Box px={18} pt={20} pb={20}>
+        <SectionLabel>Platform</SectionLabel>
+        <Box style={{ display: "flex", flexWrap: "wrap", gap: "7px 6px" }}>
+          {PLATFORMS.map((p) => (
+            <FilterChip key={p.id} label={p.label} active={currentPlatforms.includes(p.id)} onClick={() => onPlatformToggle(p.id)} />
+          ))}
+        </Box>
+      </Box>
+
+      <Divider />
+
+      <Box px={18} pt={20} pb={26}>
+        <SectionLabel>Min critic score{minScore ? ` · ${minScore}` : ""}</SectionLabel>
+        <Slider
+          value={minScore}
+          onChange={onMinScoreChange}
+          min={0}
+          max={95}
+          step={5}
+          color="violet"
+          label={(v) => v || "Any"}
+          styles={{ thumb: { boxShadow: "0 0 10px rgba(139,107,255,0.6)" } }}
+        />
+        <Group justify="space-between" mt={8}>
+          <Text fz="xs" c="dark.3" ff="monospace">Any</Text>
+          <Text fz="xs" c="dark.3" ff="monospace">95</Text>
+        </Group>
+      </Box>
+
+      <Divider />
+
+      <Box px={18} pt={20} pb={22}>
+        <SectionLabel>Release year</SectionLabel>
+        <YearPickerInput
+          type="range"
+          placeholder="Any range"
+          minDate="1970-01-01"
+          maxDate="2030-01-01"
+          value={[
+            localFrom ? `${localFrom}-01-01` : null,
+            localTo ? `${localTo}-01-01` : null,
+          ]}
+          onChange={(val) => {
+            const [from, to] = val as [string | null, string | null]
+            onLocalFromChange(from ? from.slice(0, 4) : "")
+            onLocalToChange(to ? to.slice(0, 4) : "")
+          }}
+          size="xs"
+          styles={{
+            input: {
+              background: "rgba(255,255,255,0.05)",
+              border: "1px solid rgba(255,255,255,0.10)",
+              color: "#fff",
+              borderRadius: 8,
+            },
+            calendarHeader: { color: "#fff" },
+            yearsListCell: { color: "#B7B8D6" },
+          }}
+        />
+      </Box>
+    </>
+  )
+}
+
 type Props = {
   open: boolean
+  inDrawer?: boolean
   currentStatus: Status
   currentGenres: string[]
   currentPlatforms: string[]
@@ -71,7 +189,7 @@ type Props = {
 }
 
 export default function FilterSidebar({
-  open, currentStatus, currentGenres, currentPlatforms, minScore, dateFrom, dateTo,
+  open, inDrawer, currentStatus, currentGenres, currentPlatforms, minScore, dateFrom, dateTo,
   onStatusChange, onGenreToggle, onPlatformToggle, onMinScoreChange, onDateRangeChange,
 }: Props) {
   const [localFrom, setLocalFrom] = useState(dateFrom)
@@ -96,114 +214,30 @@ export default function FilterSidebar({
     const id = setTimeout(() => onDateRangeChange(localFrom, localTo), 600)
     return () => clearTimeout(id)
   }, [localFrom, localTo]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const sectionsProps: SectionsProps = {
+    currentStatus, currentGenres, currentPlatforms, minScore, localFrom, localTo,
+    onStatusChange, onGenreToggle, onPlatformToggle, onMinScoreChange,
+    onLocalFromChange: setLocalFrom, onLocalToChange: setLocalTo,
+  }
+
   return (
     <Box
       style={{
-        width: open ? 248 : 0,
-        minWidth: open ? 248 : 0,
-        overflow: "hidden",
+        width: inDrawer ? '100%' : open ? 248 : 0,
+        minWidth: inDrawer ? '100%' : open ? 248 : 0,
         transition: "width 0.28s ease, min-width 0.28s ease",
         flexShrink: 0,
-        position: "sticky",
-        top: 88,
-        alignSelf: "flex-start",
+        ...(inDrawer ? {} : { overflow: "hidden", position: "sticky", top: 88, alignSelf: "flex-start" }),
       }}>
-      <Box style={{ width: 248 }}>
-        <Box
-          style={{
-            background: "#0E1428",
-            border: "1px solid rgba(139,107,255,0.18)",
-            borderRadius: 16,
-            overflow: "hidden",
-          }}>
-          <Box px={18} pt={22} pb={20}>
-            <SectionLabel>Status</SectionLabel>
-            <Group gap={6}>
-              {(["all", "released", "upcoming"] as Status[]).map((s) => (
-                <StatusChip
-                  key={s}
-                  label={s.charAt(0).toUpperCase() + s.slice(1)}
-                  active={currentStatus === s}
-                  onClick={() => onStatusChange(s)}
-                />
-              ))}
-            </Group>
+      <Box style={{ width: inDrawer ? '100%' : 248 }}>
+        {inDrawer ? (
+          <FilterSections {...sectionsProps} />
+        ) : (
+          <Box style={{ background: "#0E1428", border: "1px solid rgba(139,107,255,0.18)", borderRadius: 16, overflow: "hidden" }}>
+            <FilterSections {...sectionsProps} />
           </Box>
-
-          <Box style={{ height: 1, background: "rgba(255,255,255,0.05)" }} />
-
-          <Box px={18} pt={20} pb={20}>
-            <SectionLabel>Genre</SectionLabel>
-            <Box style={{ display: "flex", flexWrap: "wrap", gap: "7px 6px" }}>
-              {GENRES.map((g) => (
-                <FilterChip key={g.slug} label={g.label} active={currentGenres.includes(g.slug)} onClick={() => onGenreToggle(g.slug)} />
-              ))}
-            </Box>
-          </Box>
-
-          <Box style={{ height: 1, background: "rgba(255,255,255,0.05)" }} />
-
-          <Box px={18} pt={20} pb={20}>
-            <SectionLabel>Platform</SectionLabel>
-            <Box style={{ display: "flex", flexWrap: "wrap", gap: "7px 6px" }}>
-              {PLATFORMS.map((p) => (
-                <FilterChip key={p.id} label={p.label} active={currentPlatforms.includes(p.id)} onClick={() => onPlatformToggle(p.id)} />
-              ))}
-            </Box>
-          </Box>
-
-          <Box style={{ height: 1, background: "rgba(255,255,255,0.05)" }} />
-
-          <Box px={18} pt={20} pb={26}>
-            <SectionLabel>Min critic score{minScore ? ` · ${minScore}` : ""}</SectionLabel>
-            <Slider
-              value={minScore}
-              onChange={onMinScoreChange}
-              min={0}
-              max={95}
-              step={5}
-              color="violet"
-              label={(v) => v || "Any"}
-              styles={{ thumb: { boxShadow: "0 0 10px rgba(139,107,255,0.6)" } }}
-            />
-            <Group justify="space-between" mt={8}>
-              <Text fz="xs" c="dark.3" ff="monospace">Any</Text>
-              <Text fz="xs" c="dark.3" ff="monospace">95</Text>
-            </Group>
-          </Box>
-
-          <Box style={{ height: 1, background: "rgba(255,255,255,0.05)" }} />
-
-          <Box px={18} pt={20} pb={22}>
-            <SectionLabel>Release year</SectionLabel>
-            <YearPickerInput
-              type="range"
-              placeholder="Any range"
-              minDate="1970-01-01"
-              maxDate="2030-01-01"
-              value={[
-                localFrom ? `${localFrom}-01-01` : null,
-                localTo ? `${localTo}-01-01` : null,
-              ]}
-              onChange={(val) => {
-                const [from, to] = val as [string | null, string | null]
-                setLocalFrom(from ? from.slice(0, 4) : "")
-                setLocalTo(to ? to.slice(0, 4) : "")
-              }}
-              size="xs"
-              styles={{
-                input: {
-                  background: "rgba(255,255,255,0.05)",
-                  border: "1px solid rgba(255,255,255,0.10)",
-                  color: "#fff",
-                  borderRadius: 8,
-                },
-                calendarHeader: { color: "#fff" },
-                yearsListCell: { color: "#B7B8D6" },
-              }}
-            />
-          </Box>
-        </Box>
+        )}
       </Box>
     </Box>
   )

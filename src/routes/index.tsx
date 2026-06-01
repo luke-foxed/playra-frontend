@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { Box, Group, Text, Title, SimpleGrid, Button, Stack, Anchor, Container } from '@mantine/core'
+import { useMediaQuery } from '@mantine/hooks'
 import routeProtector from '../lib/route_protector'
 import { gamesQueryOptions, popularGamesQueryOptions, recentGamesQueryOptions } from '../features/games/api/games'
 import type { Game } from '../features/games/api/schemas'
@@ -43,6 +44,7 @@ function SectionHead({ title, icon, onSee }: { title: string; icon: React.ReactN
 
 function RouteComponent() {
   const navigate = useNavigate()
+  const isMobile = useMediaQuery('(max-width: 48em)')
   const { data: popularData } = useSuspenseQuery(popularGamesQueryOptions(10))
   const { data: recentData } = useSuspenseQuery(recentGamesQueryOptions(8))
   const { data: topData } = useSuspenseQuery(gamesQueryOptions(TOP))
@@ -60,10 +62,11 @@ function RouteComponent() {
       {featured && (
         <Box
           mt="xl"
+          mih={{ base: 240, sm: 380 }}
           className="hero-container"
           style={{
             position: 'relative', borderRadius: 'var(--mantine-radius-xl)', overflow: 'hidden',
-            minHeight: 380, display: 'flex', alignItems: 'flex-end', cursor: 'pointer',
+            display: 'flex', alignItems: 'flex-end', cursor: 'pointer',
             boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)',
           }}
           onClick={() => navigate({ to: '/games/$id', params: { id: String(featured.id) } })}
@@ -77,7 +80,7 @@ function RouteComponent() {
             }
           />
           <Box style={{ position: 'absolute', inset: 0, background: 'linear-gradient(105deg, rgba(10,15,31,.94) 12%, rgba(10,15,31,.55) 48%, transparent 80%)' }} />
-          <Box style={{ position: 'relative', padding: '44px 48px', maxWidth: 600 }}>
+          <Box p={{ base: 'xl', sm: '44px 48px' }} style={{ position: 'relative', maxWidth: 600 }}>
             <Box
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 5,
@@ -87,7 +90,7 @@ function RouteComponent() {
             >
               <SparkleIcon size={13} /> Featured
             </Box>
-            <Title order={1} mb="sm" style={{ lineHeight: 1.02, letterSpacing: -1.6, fontSize: 46, textWrap: 'balance' }}>
+            <Title order={1} mb="sm" fz={{ base: 28, sm: 46 }} style={{ lineHeight: 1.02, letterSpacing: -1.6, textWrap: 'balance' }}>
               {featured.name}
             </Title>
             <Group gap="sm" mb="md" align="center">
@@ -140,7 +143,7 @@ function RouteComponent() {
             <Box
               key={g.id}
               style={{
-                display: 'grid', gridTemplateColumns: '42px 56px 1fr auto auto', gap: 16,
+                display: 'grid', gridTemplateColumns: isMobile ? '56px 1fr auto' : '42px 56px 1fr auto auto', gap: 16,
                 alignItems: 'center', padding: '10px 16px 10px 10px',
                 background: 'var(--mantine-color-dark-6)', borderRadius: 'var(--mantine-radius-md)',
                 cursor: 'pointer', transition: 'background 0.14s',
@@ -148,7 +151,7 @@ function RouteComponent() {
               }}
               onClick={() => navigate({ to: '/games/$id', params: { id: String(g.id) } })}
             >
-              <Text fw={600} fz={18} c="dark.2" ta="center" ff="monospace">
+              <Text fw={600} fz={18} c="dark.2" ta="center" ff="monospace" visibleFrom="sm">
                 {String(i + 1).padStart(2, '0')}
               </Text>
               <Box

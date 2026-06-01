@@ -1,6 +1,7 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router"
 import { useState } from "react"
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query"
+import { useMediaQuery, useHover } from "@mantine/hooks"
 import {
   Box,
   Group,
@@ -83,12 +84,14 @@ function RouteComponent() {
   const { rateGame, isLoading: ratingLoading } = useRateGame(id, ratingsList)
   const [showLists, setShowLists] = useState(false)
   const [showDescription, setShowDescription] = useState(false)
+  const isMobile = useMediaQuery('(max-width: 48em)')
+  const { hovered: backHovered, ref: backRef } = useHover<HTMLButtonElement>()
 
   const topCoverImage = game.background_image_additional || game.background_image
 
   return (
     <Box>
-      <Box style={{ position: "relative", height: 340 }}>
+      <Box style={{ position: "relative", height: isMobile ? 220 : 340 }}>
         <BackgroundImage src={topCoverImage ?? ''} pos="absolute" inset="0">
           <Box
             pos="absolute"
@@ -98,17 +101,18 @@ function RouteComponent() {
         </BackgroundImage>
       </Box>
 
-      <Container size={1440} px="xl">
+      <Container size={1440} px={{ base: 'md', sm: 'xl' }}>
         <Anchor
+          ref={backRef}
           component="button"
           onClick={() => router.history.back()}
           style={{
             display: "inline-flex",
             alignItems: "center",
             gap: 7,
-            background: "rgba(10,15,31,.5)",
+            background: backHovered ? "rgba(255,255,255,0.12)" : "rgba(10,15,31,.5)",
             backdropFilter: "blur(8px)",
-            border: "1px solid rgba(255,255,255,0.08)",
+            border: `1px solid ${backHovered ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.08)"}`,
             borderRadius: 999,
             padding: "9px 15px",
             fontSize: 13,
@@ -118,25 +122,31 @@ function RouteComponent() {
             marginTop: -20,
             position: "relative",
             zIndex: 10,
+            transform: backHovered ? "translateY(-1px)" : "none",
+            transition: "background 0.15s, border-color 0.15s, transform 0.15s",
+            cursor: "pointer",
           }}>
           <ArrowLeftIcon size={16} /> Back
         </Anchor>
 
-        <Grid mt="xl" gap={40} align="center">
+        <Grid mt="xl" style={{ gap: isMobile ? 16 : 40 }} align="flex-start">
           {/* Cover */}
 
-          <Grid.Col span={3.5}>
+          <Grid.Col span={{ base: 12, sm: 3.5 }}>
             {game.background_image ? (
               <BackgroundImage
                 src={game.background_image}
-                style={{ aspectRatio: "3/4", boxShadow: "0 24px 60px -20px rgba(0,0,0,.8), inset 0 0 0 1px rgba(255,255,255,0.14)" }}
+                style={{
+                  ...(isMobile ? { height: 360 } : { aspectRatio: "3/4" }),
+                  boxShadow: "0 24px 60px -20px rgba(0,0,0,.8), inset 0 0 0 1px rgba(255,255,255,0.14)"
+                }}
                 bdrs="lg">
                 <Box pos="absolute" inset={0} bg="repeating-linear-gradient(0deg, transparent 0 3px, rgba(0,0,0,.05) 3px 4px)" />
               </BackgroundImage>
             ) : (
               <Box
                 style={{
-                  aspectRatio: "3/4",
+                  ...(isMobile ? { height: 360 } : { aspectRatio: "3/4" }),
                   borderRadius: "var(--mantine-radius-lg)",
                   background: "linear-gradient(160deg, var(--mantine-color-dark-5) 0%, var(--mantine-color-dark-7) 120%)",
                   boxShadow: "0 24px 60px -20px rgba(0,0,0,.8), inset 0 0 0 1px rgba(255,255,255,0.10)",
@@ -149,7 +159,7 @@ function RouteComponent() {
             )}
           </Grid.Col>
 
-          <Grid.Col span={8.5}>
+          <Grid.Col span={{ base: 12, sm: 8.5 }}>
             {/* Info */}
             <Stack>
               <Stack gap="md" style={{ flex: 1, minWidth: 0, paddingTop: 8 }} pt={8}>
@@ -161,7 +171,7 @@ function RouteComponent() {
                   ))}
                 </Group>
 
-                <Title order={1} style={{ fontSize: 44, lineHeight: 1.02, letterSpacing: -1.4, textWrap: "balance" }}>
+                <Title order={1} fz={{ base: 28, sm: 44 }} style={{ lineHeight: 1.02, letterSpacing: -1.4, textWrap: "balance" }}>
                   {game.name}
                 </Title>
 
@@ -224,12 +234,13 @@ function RouteComponent() {
                 </Group>
 
                 {/* Actions */}
-                <Group gap="xs" wrap="wrap">
+                <Stack gap="xs" style={isMobile ? {} : { flexDirection: 'row', flexWrap: 'wrap' }}>
                   <Button
                     color="violet"
                     variant={inWishlist ? "light" : "filled"}
                     leftSection={<HeartIcon size={17} fill={inWishlist} />}
                     loading={wishlistLoading}
+                    fullWidth={isMobile}
                     onClick={() => toggleWishlist({ inWishlist, gamePayload })}>
                     {inWishlist ? "In Wishlist" : "Add to Wishlist"}
                   </Button>
@@ -237,6 +248,7 @@ function RouteComponent() {
                     variant="outline"
                     color="gray"
                     leftSection={<PlusIcon size={17} />}
+                    fullWidth={isMobile}
                     rightSection={
                       inLists.length > 0 ? (
                         <Badge size="xs" color="violet" variant="filled">
@@ -247,7 +259,7 @@ function RouteComponent() {
                     onClick={() => setShowLists(true)}>
                     Add to list
                   </Button>
-                </Group>
+                </Stack>
 
                 {/* Rating */}
                 <Stack
@@ -255,7 +267,7 @@ function RouteComponent() {
                   bg="dark.6"
                   bdrs="md"
                   gap={10}
-                  w="auto"
+                  w={{ base: '100%', sm: 'auto' }}
                   style={{
                     boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08)",
                   }}>
@@ -263,7 +275,7 @@ function RouteComponent() {
                     {myRating ? "Your rating" : "Rate this game"}
                   </Text>
                   <Group gap="md" align="center">
-                    <StarRating value={myRating} readonly={ratingLoading} onChange={(n) => rateGame({ score: n, gamePayload })} />
+                    <StarRating value={myRating} readonly={ratingLoading} onChange={(n) => rateGame({ score: n, gamePayload })} size={isMobile ? 20 : 24} />
                     {myRating > 0 && (
                       <Anchor component="button" c="violet" fz="sm" onClick={() => rateGame({ score: 0, gamePayload })}>
                         Clear
