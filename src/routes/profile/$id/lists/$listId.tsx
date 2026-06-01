@@ -1,4 +1,4 @@
-import { createFileRoute, useRouter, Link } from '@tanstack/react-router'
+import { createFileRoute, useNavigate, Link } from '@tanstack/react-router'
 import { useState, useContext } from 'react'
 import { useSuspenseQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -33,7 +33,7 @@ function ListTypeIcon({ type }: { type: string }) {
 
 function RouteComponent() {
   const params = Route.useParams()
-  const router = useRouter()
+  const navigate = useNavigate()
   const qc = useQueryClient()
   const { profile: currentUser } = useContext(AuthContext)
   const isOwn = currentUser?.id === params.id
@@ -62,7 +62,7 @@ function RouteComponent() {
     await deleteList(detail.id)
     notifications.show({ message: 'List deleted', color: 'green' })
     qc.invalidateQueries(listsQueryOptions())
-    router.navigate({ to: '/profile/$id', params: { id: params.id } })
+    navigate({ to: '/profile/$id/', params: { id: params.id } })
   }
 
   const doRename = async () => {

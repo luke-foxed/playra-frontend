@@ -3,7 +3,7 @@ import { useState, useContext } from 'react'
 import { useSuspenseQuery, useQueryClient, useQuery } from '@tanstack/react-query'
 import {
   Box, Text, Title, Group, Stack, Avatar, Button, SimpleGrid,
-  Container, Anchor, TextInput, Modal, Badge,
+  Container, Anchor, TextInput, Modal,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { profileQueryOptions, updateProfile } from '../../../features/profile/api/profile'
@@ -11,7 +11,7 @@ import { listsQueryOptions, listDetailQueryOptions, createList } from '../../../
 import { AuthContext } from '../../../features/auth/providers/auth_provider'
 import type { List } from '../../../features/lists/api/schemas'
 import {
-  EditIcon, PlusIcon, ListIcon, HeartIcon, PlayIcon, StarIcon,
+  EditIcon, PlusIcon, ListIcon, HeartIcon, StarIcon,
   GlobeIcon, ChevronIcon, BookmarkIcon,
 } from '../../../features/shared/icons'
 import PlayraLoader from '../../../features/shared/playra_loader'
