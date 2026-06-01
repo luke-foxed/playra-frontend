@@ -3,7 +3,7 @@ import { useState, useContext } from 'react'
 import { useSuspenseQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Box, Text, Title, Group, Stack, Button, SimpleGrid,
-  Container, Anchor, TextInput, Modal, ActionIcon,
+  Container, TextInput, Modal, ActionIcon,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import {
@@ -62,7 +62,7 @@ function RouteComponent() {
     await deleteList(detail.id)
     notifications.show({ message: 'List deleted', color: 'green' })
     qc.invalidateQueries(listsQueryOptions())
-    navigate({ to: '/profile/$id/', params: { id: params.id } })
+    navigate({ to: '/profile/$id', params: { id: params.id } })
   }
 
   const doRename = async () => {
@@ -80,11 +80,9 @@ function RouteComponent() {
 
   return (
     <Container size={1240} px="xl" pb="xl">
-      <Anchor
-        component={Link}
+      <Link
         to="/profile/$id"
         params={{ id: params.id }}
-        mt="xl"
         style={{
           display: 'inline-flex', alignItems: 'center', gap: 7,
           background: 'rgba(10,15,31,.5)', backdropFilter: 'blur(8px)',
@@ -95,7 +93,7 @@ function RouteComponent() {
         }}
       >
         <ArrowLeftIcon size={16} /> Your profile
-      </Anchor>
+      </Link>
 
       <Group justify="space-between" align="flex-start" gap="xl" mt="xl" mb="lg" wrap="wrap">
         <Group gap="md" align="center">
