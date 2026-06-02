@@ -26,6 +26,7 @@ import {
   IconChevronLeft,
   IconDotsVertical,
   IconShield,
+  IconEyeOff,
 } from '@tabler/icons-react'
 
 type IconProps = { size?: number; fill?: boolean; stroke?: number; style?: React.CSSProperties; className?: string }
@@ -53,6 +54,7 @@ export const PhotoIcon         = ({ size = 18, style, className }: IconProps) =>
 export const ChevronLeftIcon   = ({ size = 18, style, className }: IconProps) => <IconChevronLeft size={size} style={style} className={className} />
 export const DotsIcon          = ({ size = 18, style, className }: IconProps) => <IconDotsVertical size={size} style={style} className={className} />
 export const ShieldIcon        = ({ size = 18, style, className }: IconProps) => <IconShield size={size} style={style} className={className} />
+export const EyeOffIcon        = ({ size = 18, style, className }: IconProps) => <IconEyeOff size={size} style={style} className={className} />
 
 export const MetacriticIcon = ({ size = 18, style, className }: IconProps) => (
   <svg role="img" viewBox="0 0 24 24" width={size} height={size} fill="currentColor" style={style} className={className}>

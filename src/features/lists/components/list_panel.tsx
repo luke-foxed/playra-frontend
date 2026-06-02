@@ -17,13 +17,17 @@ import {
   Textarea,
   TextInput,
   Title,
+  Tooltip,
 } from "@mantine/core"
 import { useDisclosure } from "@mantine/hooks"
 import { useForm } from "@mantine/form"
+import { useQueryClient } from "@tanstack/react-query"
 import useGetLists from "../hooks/useGetLists"
 import useGetList from "../hooks/useGetList"
 import useCreateList from "../hooks/useCreateList"
 import useRemoveGameFromList from "../hooks/useRemoveGameFromList"
+import { updateList } from "../api/lists"
+import { GlobeIcon, LockIcon } from "../../shared/icons"
 
 type Props = {
   profileUserId: string
@@ -36,11 +40,23 @@ export default function ListPanel({ profileUserId, currentUserId }: Props) {
   const isOwnProfile = profileUserId === currentUserId
   const [selectedListId, setSelectedListId] = useState<string | null>(null)
   const [createOpen, { open: openCreate, close: closeCreate }] = useDisclosure(false)
+  const [togglingId, setTogglingId] = useState<string | null>(null)
+  const qc = useQueryClient()
 
   const { data: lists, isLoading: listsLoading, isError: listsError } = useGetLists(profileUserId)
   const { data: listDetail, isLoading: detailLoading } = useGetList(selectedListId)
   const { createList, isLoading: createLoading } = useCreateList(profileUserId)
   const { removeGame, isLoading: removeLoading } = useRemoveGameFromList(selectedListId)
+
+  const togglePublic = async (list: { id: string; name: string; description: string | null; is_public: boolean }) => {
+    setTogglingId(list.id)
+    try {
+      await updateList(list.id, { name: list.name, description: list.description, is_public: !list.is_public })
+      qc.invalidateQueries({ queryKey: ["lists", profileUserId] })
+    } finally {
+      setTogglingId(null)
+    }
+  }
 
   const form = useForm({
     initialValues: { name: "", description: "", is_public: false },
@@ -80,11 +96,21 @@ export default function ListPanel({ profileUserId, currentUserId }: Props) {
                   active={list.id === selectedListId}
                   onClick={() => setSelectedListId(list.id)}
                   rightSection={
-                    !list.is_public ? (
-                      <Badge size="xs" variant="outline" color="gray">
-                        private
-                      </Badge>
-                    ) : null
+                    isOwnProfile ? (
+                      <Tooltip label={list.is_public ? "Make private" : "Make public"} withArrow position="right">
+                        <ActionIcon
+                          size="xs"
+                          variant="subtle"
+                          color={list.is_public ? "cyan" : "gray"}
+                          loading={togglingId === list.id}
+                          onClick={(e) => { e.stopPropagation(); togglePublic(list) }}
+                        >
+                          {list.is_public ? <GlobeIcon size={11} /> : <LockIcon size={11} />}
+                        </ActionIcon>
+                      </Tooltip>
+                    ) : list.is_public ? null : (
+                      <Badge size="xs" variant="outline" color="gray">private</Badge>
+                    )
                   }
                 />
               ))}

@@ -7,7 +7,7 @@ import { listDetailQueryOptions } from "../../features/lists/api/lists"
 import routeProtector from "../../lib/route_protector"
 import PlayraLoader from "../../features/shared/playra_loader"
 import GameCard from "../../features/games/components/game_card"
-import { ArrowLeftIcon, ListIcon, GlobeIcon, SearchIcon } from "../../features/shared/icons"
+import { ArrowLeftIcon, ListIcon, SearchIcon } from "../../features/shared/icons"
 
 export const Route = createFileRoute("/lists/$listId")({
   component: RouteComponent,
@@ -37,33 +37,58 @@ function RouteComponent() {
   const displayName = creator?.username ?? "unknown"
 
   const [searchQ, setSearchQ] = useState('')
-  const [sortOrder, setSortOrder] = useState('rating-desc')
+  const [sortOrder, setSortOrder] = useState(detail.type === 'ratings' ? 'rating-desc' : 'name-asc')
 
   const isRatingsList = detail.type === 'ratings'
+  const isWishlist = detail.type === 'wishlist'
+  const showControls = !isWishlist && detail.games.length > 0
+  const collageImages = (isRatingsList || isWishlist) && !detail.cover_url
+    ? detail.games.filter(g => g.background_image).slice(0, 5)
+    : []
   const displayedGames = useMemo(() => {
     let games = [...detail.games]
-    if (isRatingsList && searchQ.trim()) {
+    if (!isWishlist && searchQ.trim()) {
       const q = searchQ.toLowerCase()
       games = games.filter((g) => g.name.toLowerCase().includes(q))
     }
-    if (isRatingsList) {
+    if (!isWishlist) {
       games.sort((a, b) => {
         if (sortOrder === 'rating-asc') return (a.user_rating ?? 99) - (b.user_rating ?? 99)
+        if (sortOrder === 'rating-desc') return (b.user_rating ?? -1) - (a.user_rating ?? -1)
         if (sortOrder === 'name-asc') return a.name.localeCompare(b.name)
         if (sortOrder === 'name-desc') return b.name.localeCompare(a.name)
-        return (b.user_rating ?? -1) - (a.user_rating ?? -1)
+        return 0
       })
     }
     return games
-  }, [detail.games, isRatingsList, searchQ, sortOrder])
+  }, [detail.games, isWishlist, searchQ, sortOrder])
 
   return (
     <Box>
-      <Box style={{ position: "relative", height: isMobile ? 160 : 220 }}>
+      <Box style={{ position: "relative", height: isMobile ? 220 : 340 }}>
         {detail.cover_url ? (
           <BackgroundImage src={detail.cover_url} pos="absolute" inset="0">
             <Box pos="absolute" inset="0" bg="linear-gradient(to bottom, rgba(10,15,31,.3) 0%, rgba(10,15,31,.75) 60%, var(--mantine-color-dark-7) 100%)" />
           </BackgroundImage>
+        ) : collageImages.length >= 2 ? (
+          <>
+            <Box pos="absolute" inset="0" style={{ display: 'flex', overflow: 'hidden' }}>
+              {collageImages.map((g) => (
+                <Box
+                  key={g.game_id}
+                  style={{
+                    flex: 1,
+                    backgroundImage: `url(${g.background_image})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    filter: 'brightness(0.6) saturate(1.1)',
+                  }}
+                />
+              ))}
+            </Box>
+            <Box pos="absolute" inset="0" style={{ background: 'repeating-linear-gradient(0deg, transparent 0 3px, rgba(0,0,0,.07) 3px 4px)' }} />
+            <Box pos="absolute" inset="0" style={{ background: 'linear-gradient(to bottom, rgba(10,15,31,0) 0%, rgba(10,15,31,.5) 35%, rgba(10,15,31,.88) 62%, rgba(10,15,31,1) 78%)' }} />
+          </>
         ) : TYPE_ACCENT[detail.type] ? (
           <>
             <Box pos="absolute" inset="0" style={{ background: `linear-gradient(120deg, color-mix(in oklab, ${TYPE_ACCENT[detail.type]} 26%, transparent) 0%, transparent 58%), linear-gradient(160deg, var(--mantine-color-dark-6) 10%, var(--mantine-color-dark-8) 130%)` }} />
@@ -109,11 +134,6 @@ function RouteComponent() {
           <Group gap="xs" mt={4}>
             <Text fz="sm" c="dark.2" ff="monospace">{detail.games.length} games</Text>
             <Text c="dark.3">·</Text>
-            <Group gap={4}>
-              <GlobeIcon size={12} style={{ color: "#7CC8E3" }} />
-              <Text fz="sm" c="dark.2">public</Text>
-            </Group>
-            <Text c="dark.3">·</Text>
             <Group gap={6}>
               <Text fz="sm" c="dark.2">by</Text>
               <Link
@@ -138,30 +158,36 @@ function RouteComponent() {
         </Box>
       </Group>
 
-      {isRatingsList && detail.games.length > 0 && (
-        <Group gap="sm" mb="md" align="center">
+      {showControls && (
+        <Box style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: isMobile ? undefined : 'space-between', gap: 8, alignItems: isMobile ? 'stretch' : 'center', marginBottom: 16 }}>
           <TextInput
             placeholder="Search games…"
             leftSection={<SearchIcon size={15} />}
             value={searchQ}
             onChange={(e) => setSearchQ(e.target.value)}
             size="sm"
-            style={{ flex: 1, maxWidth: 280 }}
+            style={isMobile ? { flex: 1 } : { width: 320 }}
           />
           <Select
             size="sm"
             value={sortOrder}
             onChange={(v) => v && setSortOrder(v)}
-            data={[
-              { value: 'rating-desc', label: 'Rating: High → Low' },
-              { value: 'rating-asc', label: 'Rating: Low → High' },
-              { value: 'name-asc', label: 'Name: A–Z' },
-              { value: 'name-desc', label: 'Name: Z–A' },
-            ]}
-            style={{ width: 190 }}
+            data={isRatingsList
+              ? [
+                  { value: 'rating-desc', label: 'Rating: High → Low' },
+                  { value: 'rating-asc', label: 'Rating: Low → High' },
+                  { value: 'name-asc', label: 'Name: A–Z' },
+                  { value: 'name-desc', label: 'Name: Z–A' },
+                ]
+              : [
+                  { value: 'name-asc', label: 'Name: A–Z' },
+                  { value: 'name-desc', label: 'Name: Z–A' },
+                ]
+            }
+            style={isMobile ? { flex: 1 } : { width: 210 }}
             allowDeselect={false}
           />
-        </Group>
+        </Box>
       )}
 
       {detail.games.length === 0 ? (

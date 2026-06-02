@@ -8,7 +8,7 @@ import {
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import {
-  listDetailQueryOptions, listsQueryOptions,
+  listDetailQueryOptions, listsQueryOptions, publicListsQueryOptions,
   deleteList, updateList, removeGamesFromList, addGamesToList,
 } from '../../../../features/lists/api/lists'
 import type { ListDetail } from '../../../../features/lists/api/schemas'
@@ -16,7 +16,7 @@ import { AuthContext } from '../../../../features/auth/providers/auth_provider'
 import GameCard from '../../../../features/games/components/game_card'
 import {
   EditIcon, PlusIcon, ListIcon, HeartIcon, PlayIcon,
-  GlobeIcon, LockIcon, XIcon, TrashIcon, ArrowLeftIcon, SearchIcon, DotsIcon, ShuffleIcon,
+  GlobeIcon, LockIcon, EyeOffIcon, XIcon, TrashIcon, ArrowLeftIcon, SearchIcon, DotsIcon, ShuffleIcon,
 } from '../../../../features/shared/icons'
 import PlayraLoader from '../../../../features/shared/playra_loader'
 
@@ -56,6 +56,10 @@ function RouteComponent() {
   const isMobile = useMediaQuery('(max-width: 48em)')
 
   const isRatingsList = detail.type === 'ratings'
+  const isWishlist = detail.type === 'wishlist'
+  const collageImages = (isRatingsList || isWishlist) && !detail.cover_url
+    ? detail.games.filter(g => g.background_image).slice(0, 5)
+    : []
   const displayedGames = useMemo(() => {
     let games = [...detail.games]
     if (isRatingsList && searchQ.trim()) {
@@ -78,6 +82,7 @@ function RouteComponent() {
   const refresh = () => {
     refetch()
     qc.invalidateQueries(listsQueryOptions())
+    qc.invalidateQueries(publicListsQueryOptions())
   }
 
   const removeGame = async (gameId: number) => {
@@ -90,6 +95,7 @@ function RouteComponent() {
     await deleteList(detail.id)
     notifications.show({ title: 'Deleted', message: 'List has been deleted', color: 'green' })
     qc.invalidateQueries(listsQueryOptions())
+    qc.invalidateQueries(publicListsQueryOptions())
     navigate({ to: '/profile/$id', params: { id: params.id } })
   }
 
@@ -108,11 +114,30 @@ function RouteComponent() {
 
   return (
     <Box>
-      <Box style={{ position: 'relative', height: isMobile ? 160 : 220 }}>
+      <Box style={{ position: 'relative', height: isMobile ? 220 : 340 }}>
         {detail.cover_url ? (
           <BackgroundImage src={detail.cover_url} pos="absolute" inset="0">
             <Box pos="absolute" inset="0" bg="linear-gradient(to bottom, rgba(10,15,31,.3) 0%, rgba(10,15,31,.75) 60%, var(--mantine-color-dark-7) 100%)" />
           </BackgroundImage>
+        ) : collageImages.length >= 2 ? (
+          <>
+            <Box pos="absolute" inset="0" style={{ display: 'flex', overflow: 'hidden' }}>
+              {collageImages.map((g) => (
+                <Box
+                  key={g.game_id}
+                  style={{
+                    flex: 1,
+                    backgroundImage: `url(${g.background_image})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    filter: 'brightness(0.6) saturate(1.1)',
+                  }}
+                />
+              ))}
+            </Box>
+            <Box pos="absolute" inset="0" style={{ background: 'repeating-linear-gradient(0deg, transparent 0 3px, rgba(0,0,0,.07) 3px 4px)' }} />
+            <Box pos="absolute" inset="0" style={{ background: 'linear-gradient(to bottom, rgba(10,15,31,0) 0%, rgba(10,15,31,.5) 35%, rgba(10,15,31,.88) 62%, rgba(10,15,31,1) 78%)' }} />
+          </>
         ) : TYPE_ACCENT[detail.type] ? (
           <>
             <Box pos="absolute" inset="0" style={{ background: `linear-gradient(120deg, color-mix(in oklab, ${TYPE_ACCENT[detail.type]} 26%, transparent) 0%, transparent 58%), linear-gradient(160deg, var(--mantine-color-dark-6) 10%, var(--mantine-color-dark-8) 130%)` }} />
@@ -157,19 +182,43 @@ function RouteComponent() {
             <Group gap="xs" mt={4}>
               <Text fz="sm" c="dark.2" ff="monospace">{detail.games.length} games</Text>
               {isLocked && <><Text c="dark.3">·</Text><Group gap={4}><LockIcon size={12} style={{ color: 'var(--mantine-color-dark-2)' }} /><Text fz="sm" c="dark.2">locked</Text></Group></>}
-              {!isLocked && (detail.is_public
-                ? <><Text c="dark.3">·</Text><Group gap={4}><GlobeIcon size={12} style={{ color: '#7CC8E3' }} /><Text fz="sm" c="dark.2">public</Text></Group></>
-                : <><Text c="dark.3">·</Text><Text fz="sm" c="dark.2">private</Text></>
-              )}
+              {detail.is_public
+                ? <><Text c="dark.3">·</Text><Group gap={4}><GlobeIcon size={12} style={{ color: 'var(--mantine-color-dark-1)' }} /><Text fz="sm" c="dark.2">public</Text></Group></>
+                : <><Text c="dark.3">·</Text><Group gap={4}><EyeOffIcon size={12} style={{ color: 'var(--mantine-color-dark-2)' }} /><Text fz="sm" c="dark.2">private</Text></Group></>
+              }
             </Group>
           </Box>
         </Group>
 
         {isOwn && (
-          <Group gap="xs">
-            <Button size="sm" leftSection={<PlusIcon size={15} />} onClick={() => setAddOpen(true)}>
+          <Group gap="xs" style={isMobile ? { width: '100%' } : undefined}>
+            <Button size="sm" leftSection={<PlusIcon size={15} />} onClick={() => setAddOpen(true)} style={isMobile ? { flex: 1 } : undefined}>
               Add games
             </Button>
+            {isLocked && (
+              <Menu shadow="lg" width={200} position="bottom-end" withArrow>
+                <Menu.Target>
+                  <ActionIcon variant="default" size="lg" aria-label="More options">
+                    <DotsIcon size={15} />
+                  </ActionIcon>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  <Menu.Item
+                    leftSection={
+                      togglingPublic
+                        ? <Loader size={14} color="violet" />
+                        : detail.is_public
+                          ? <LockIcon size={14} />
+                          : <GlobeIcon size={14} />
+                    }
+                    disabled={togglingPublic}
+                    onClick={doTogglePublic}
+                  >
+                    {detail.is_public ? 'Make private' : 'Make public'}
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
+            )}
             {!isLocked && (
               <Menu shadow="lg" width={200} position="bottom-end" withArrow>
                 <Menu.Target>
@@ -216,14 +265,14 @@ function RouteComponent() {
       )}
 
       {isRatingsList && detail.games.length > 0 && (
-        <Group gap="sm" mb="md" align="center">
+        <Box style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: isMobile ? undefined : 'space-between', gap: 8, alignItems: isMobile ? 'stretch' : 'center', marginBottom: 16 }}>
           <TextInput
             placeholder="Search games…"
             leftSection={<SearchIcon size={15} />}
             value={searchQ}
             onChange={(e) => setSearchQ(e.target.value)}
             size="sm"
-            style={{ flex: 1, maxWidth: 280 }}
+            style={isMobile ? { flex: 1 } : { width: 320 }}
           />
           <Select
             size="sm"
@@ -235,10 +284,10 @@ function RouteComponent() {
               { value: 'name-asc', label: 'Name: A–Z' },
               { value: 'name-desc', label: 'Name: Z–A' },
             ]}
-            style={{ width: 190 }}
+            style={isMobile ? { flex: 1 } : { width: 210 }}
             allowDeselect={false}
           />
-        </Group>
+        </Box>
       )}
 
       {detail.games.length === 0 ? (

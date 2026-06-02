@@ -28,6 +28,17 @@ export const Route = createFileRoute('/profile/$id/')({
   pendingComponent: () => <PlayraLoader />,
 })
 
+const LIST_ACCENT: Record<string, string> = {
+  ratings: '#F0C36B',
+  wishlist: '#F498C8',
+}
+
+function ListTypeGraphic({ type, size }: { type: string; size: number }) {
+  if (type === 'ratings') return <StarIcon size={size} fill />
+  if (type === 'wishlist') return <HeartIcon size={size} fill />
+  return <ListIcon size={size} />
+}
+
 function avatarColor(str: string) {
   let h = 0
   for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) % 360
@@ -307,32 +318,37 @@ function ListCard({ list, onOpen }: { list: List; onOpen: () => void }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <Box style={{
-        position: 'relative', height: 132,
-        background: list.cover_url
-          ? `url('${list.cover_url}') center / cover no-repeat var(--mantine-color-dark-7)`
-          : 'linear-gradient(135deg, color-mix(in oklab, var(--mantine-color-violet-8) 30%, var(--mantine-color-dark-7)) 0%, var(--mantine-color-dark-7) 100%)',
-        display: 'grid', placeItems: 'center',
-      }}>
-        {!list.cover_url && (
-          <Box style={{ color: 'var(--mantine-color-violet-4)', opacity: 0.35 }}>
-            <ListIcon size={24} />
+      {(() => {
+        const accent = LIST_ACCENT[list.type]
+        return (
+          <Box style={{ position: 'relative', height: 132, overflow: 'hidden' }}>
+            {list.cover_url ? (
+              <Box style={{ position: 'absolute', inset: 0, backgroundImage: `url('${list.cover_url}')`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+            ) : (
+              <>
+                <Box style={{ position: 'absolute', inset: 0, background: accent ? `linear-gradient(120deg, color-mix(in oklab, ${accent} 22%, transparent) 0%, transparent 60%), linear-gradient(160deg, var(--mantine-color-dark-6) 10%, var(--mantine-color-dark-8) 130%)` : 'linear-gradient(135deg, color-mix(in oklab, var(--mantine-color-violet-8) 30%, var(--mantine-color-dark-7)) 0%, var(--mantine-color-dark-7) 100%)' }} />
+                {accent && <Box style={{ position: 'absolute', inset: 0, opacity: 0.35, backgroundImage: `radial-gradient(color-mix(in oklab, ${accent} 35%, transparent) 1px, transparent 1.4px)`, backgroundSize: '18px 18px', WebkitMaskImage: 'linear-gradient(115deg, #000 0%, transparent 55%)', maskImage: 'linear-gradient(115deg, #000 0%, transparent 55%)' }} />}
+                <Box style={{ position: 'absolute', right: -10, top: '50%', transform: 'translateY(-50%)', opacity: 0.18, color: accent ?? 'var(--mantine-color-violet-4)' }}>
+                  <ListTypeGraphic type={list.type} size={90} />
+                </Box>
+              </>
+            )}
+            {list.is_public && (
+              <Box style={{
+                position: 'absolute', top: 10, right: 10, zIndex: 2,
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+                background: 'color-mix(in oklab, var(--mantine-color-dark-8) 66%, transparent)',
+                backdropFilter: 'blur(6px)',
+                color: '#7CC8E3', fontSize: 10.5, fontWeight: 600, letterSpacing: 0.3,
+                padding: '4px 9px', borderRadius: 999,
+                boxShadow: 'inset 0 0 0 1px color-mix(in oklab, #7CC8E3 36%, transparent)',
+              }}>
+                <GlobeIcon size={12} /> Public
+              </Box>
+            )}
           </Box>
-        )}
-        {list.is_public && (
-          <Box style={{
-            position: 'absolute', top: 10, right: 10, zIndex: 2,
-            display: 'inline-flex', alignItems: 'center', gap: 5,
-            background: 'color-mix(in oklab, var(--mantine-color-dark-8) 66%, transparent)',
-            backdropFilter: 'blur(6px)',
-            color: '#7CC8E3', fontSize: 10.5, fontWeight: 600, letterSpacing: 0.3,
-            padding: '4px 9px', borderRadius: 999,
-            boxShadow: 'inset 0 0 0 1px color-mix(in oklab, #7CC8E3 36%, transparent)',
-          }}>
-            <GlobeIcon size={12} /> Public
-          </Box>
-        )}
-      </Box>
+        )
+      })()}
       <Box style={{ padding: '13px 14px' }}>
         <Text fw={600} fz={15} style={{ letterSpacing: -0.2 }}>{list.name}</Text>
         <Text fz={11.5} c="dark.3" mt={3} ff="monospace">

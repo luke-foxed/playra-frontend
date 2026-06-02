@@ -24,6 +24,7 @@ import { Modal } from "@mantine/core"
 import { notifications } from "@mantine/notifications"
 import { gameQueryOptions, userGameQueryOptions, similarGamesQueryOptions, gameScreenshotsQueryOptions } from "../../features/games/api/games"
 import { listsQueryOptions, addGamesToList, removeGamesFromList, createList } from "../../features/lists/api/lists"
+import { useUserLibrary } from "../../features/games/hooks/useUserLibrary"
 import routeProtector from "../../lib/route_protector"
 import MetacriticBadge from "../../features/shared/metacritic_badge"
 import StarRating from "../../features/shared/star_rating"
@@ -82,6 +83,8 @@ function RouteComponent() {
     .filter(Boolean)
     .map((img, i) => ({ id: -(i + 1), image: img! }))
   const allScreenshots = [...baseImages, ...screenshotsList]
+
+  const { wishlistedIds, userRatings } = useUserLibrary()
 
   const { toggleWishlist, isLoading: wishlistLoading } = useWishlistToggle(id, wishlist)
   const { rateGame, isLoading: ratingLoading } = useRateGame(id, ratingsList)
@@ -461,6 +464,8 @@ function RouteComponent() {
                   genres={g.genres.map((x) => x.name)}
                   platforms={g.platforms.map((x) => x.platform.slug)}
                   communityScore={g.playra_community_score}
+                  inWishlist={wishlistedIds.has(g.id)}
+                  userScore={userRatings.get(g.id) ?? null}
                 />
               ))}
             </SimpleGrid>

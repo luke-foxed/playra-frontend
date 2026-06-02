@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { Box, AspectRatio, Group, Text } from '@mantine/core'
 import { useState } from 'react'
+import { useMediaQuery } from '@mantine/hooks'
 import MetacriticBadge from '../../shared/metacritic_badge'
 import { HeartIcon, ClockIcon, StarIcon, XIcon } from '../../shared/icons'
 import useAddToWishlist from '../hooks/useAddToWishlist'
@@ -32,7 +33,8 @@ const PLATFORM_PRIORITY: Record<string, number> = {
   linux: 10,
 }
 
-const MAX_PLATFORMS = 2
+const MAX_PLATFORMS_DESKTOP = 2
+const MAX_PLATFORMS_MOBILE = 1
 
 type Props = {
   id: number
@@ -43,18 +45,21 @@ type Props = {
   genres?: string[]
   platforms?: string[]
   communityScore?: number | null
+  userScore?: number | null
   showWish?: boolean
   inWishlist?: boolean
   onWishToggle?: (e: React.MouseEvent) => void
 }
 
 export default function GameCard({
-  id, name, imageUrl, metacritic, released, genres, platforms, communityScore,
+  id, name, imageUrl, metacritic, released, genres, platforms, communityScore, userScore,
   showWish = true, inWishlist = false, onWishToggle,
 }: Props) {
-  const displayScore = communityScore
+  const hasUserScore = userScore != null && userScore > 0
+  const displayScore = hasUserScore ? userScore : communityScore
   const [hovered, setHovered] = useState(false)
   const [badgeHovered, setBadgeHovered] = useState(false)
+  const isMobile = useMediaQuery('(max-width: 48em)')
   const { addToWishlist, isLoading: addLoading } = useAddToWishlist(id)
   const { removeFromWishlist, isLoading: removeLoading } = useRemoveFromWishlist(id)
   const wishLoading = addLoading || removeLoading
@@ -62,10 +67,11 @@ export default function GameCard({
   const year = released?.slice(0, 4)
   const isUpcoming = released ? released > new Date().toISOString().slice(0, 10) : false
 
+  const maxPlatforms = isMobile ? MAX_PLATFORMS_MOBILE : MAX_PLATFORMS_DESKTOP
   const sorted = [...(platforms ?? [])].sort(
     (a, b) => (PLATFORM_PRIORITY[a] ?? 99) - (PLATFORM_PRIORITY[b] ?? 99)
   )
-  const shown = sorted.slice(0, MAX_PLATFORMS)
+  const shown = sorted.slice(0, maxPlatforms)
   const overflow = sorted.length - shown.length
 
   const coverBg: React.CSSProperties = imageUrl
@@ -217,8 +223,12 @@ export default function GameCard({
             </Group>
             {!isUpcoming && (
               <Group gap={3} wrap='nowrap' style={{ flexShrink: 0 }}>
-                <StarIcon size={11} fill={displayScore != null} style={{ color: displayScore != null ? "#F0C36B" : "var(--mantine-color-dark-4)" }} />
-                <Text fz={11} fw={600} ff='monospace' c={displayScore != null ? "dark.1" : "dark.4"}>
+                <StarIcon
+                  size={12}
+                  fill={displayScore != null}
+                  style={{ color: displayScore != null ? (hasUserScore ? "var(--mantine-color-violet-4)" : "#F0C36B") : "var(--mantine-color-dark-4)" }}
+                />
+                <Text fz={12} fw={600} ff='monospace' c={displayScore != null ? "dark.1" : "dark.4"}>
                   {displayScore != null ? displayScore.toFixed(1) : "—"}
                 </Text>
               </Group>

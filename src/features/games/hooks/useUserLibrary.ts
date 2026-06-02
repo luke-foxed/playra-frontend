@@ -8,13 +8,24 @@ export function useUserLibrary() {
   })
 
   const wishlist = lists?.find((l) => l.type === "wishlist")
+  const ratingsList = lists?.find((l) => l.type === "ratings")
 
   const { data: wishlistDetail } = useQuery({
     ...listDetailQueryOptions(wishlist?.id ?? ""),
     enabled: !!wishlist?.id,
   })
 
-  const wishlistedIds = new Set(wishlistDetail?.games.map((g) => g.game_id) ?? [])
+  const { data: ratingsDetail } = useQuery({
+    ...listDetailQueryOptions(ratingsList?.id ?? ""),
+    enabled: !!ratingsList?.id,
+  })
 
-  return { wishlistedIds }
+  const wishlistedIds = new Set(wishlistDetail?.games.map((g) => g.game_id) ?? [])
+  const userRatings = new Map<number, number>(
+    (ratingsDetail?.games ?? [])
+      .filter((g) => g.user_rating != null)
+      .map((g) => [g.game_id, g.user_rating!] as [number, number])
+  )
+
+  return { wishlistedIds, userRatings }
 }

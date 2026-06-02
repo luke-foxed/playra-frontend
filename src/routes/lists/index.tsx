@@ -1,11 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { useSuspenseQuery } from "@tanstack/react-query"
-import { Box, Text, Title, Group, Container, Avatar, SimpleGrid } from "@mantine/core"
+import { useState, useMemo } from "react"
+import { Box, Text, Title, Group, Container, Avatar, SimpleGrid, Select } from "@mantine/core"
 import { publicListsQueryOptions } from "../../features/lists/api/lists"
 import type { PublicList } from "../../features/lists/api/schemas"
 import routeProtector from "../../lib/route_protector"
 import PlayraLoader from "../../features/shared/playra_loader"
-import { ListIcon, GlobeIcon } from "../../features/shared/icons"
+import { ListIcon, StarIcon, HeartIcon, GlobeIcon } from "../../features/shared/icons"
 
 export const Route = createFileRoute("/lists/")({
   component: RouteComponent,
@@ -14,6 +15,17 @@ export const Route = createFileRoute("/lists/")({
     queryClient.ensureQueryData(publicListsQueryOptions()),
   pendingComponent: () => <PlayraLoader />,
 })
+
+const LIST_ACCENT: Record<string, string> = {
+  ratings: '#F0C36B',
+  wishlist: '#F498C8',
+}
+
+function ListTypeGraphic({ type, size }: { type: string; size: number }) {
+  if (type === 'ratings') return <StarIcon size={size} fill />
+  if (type === 'wishlist') return <HeartIcon size={size} fill />
+  return <ListIcon size={size} />
+}
 
 function avatarColor(str: string) {
   let h = 0
@@ -45,23 +57,24 @@ function PublicListCard({ list }: { list: PublicList }) {
         }}
       >
         {/* Cover */}
-        <Box
-          style={{
-            height: 80,
-            flexShrink: 0,
-            background: list.cover_url
-              ? `url('${list.cover_url}') center / cover no-repeat var(--mantine-color-dark-5)`
-              : "linear-gradient(135deg, color-mix(in oklab, var(--mantine-color-violet-8) 35%, var(--mantine-color-dark-5)) 0%, var(--mantine-color-dark-5) 100%)",
-            display: "grid",
-            placeItems: "center",
-          }}
-        >
-          {!list.cover_url && (
-            <Box style={{ color: "var(--mantine-color-violet-4)", opacity: 0.45 }}>
-              <ListIcon size={22} />
+        {(() => {
+          const accent = LIST_ACCENT[list.type]
+          return (
+            <Box style={{ height: 80, flexShrink: 0, position: 'relative', overflow: 'hidden' }}>
+              {list.cover_url ? (
+                <Box style={{ position: 'absolute', inset: 0, backgroundImage: `url('${list.cover_url}')`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+              ) : (
+                <>
+                  <Box style={{ position: 'absolute', inset: 0, background: accent ? `linear-gradient(120deg, color-mix(in oklab, ${accent} 22%, transparent) 0%, transparent 60%), linear-gradient(160deg, var(--mantine-color-dark-6) 10%, var(--mantine-color-dark-7) 130%)` : 'linear-gradient(135deg, color-mix(in oklab, var(--mantine-color-violet-8) 35%, var(--mantine-color-dark-6)) 0%, var(--mantine-color-dark-7) 100%)' }} />
+                  {accent && <Box style={{ position: 'absolute', inset: 0, opacity: 0.35, backgroundImage: `radial-gradient(color-mix(in oklab, ${accent} 35%, transparent) 1px, transparent 1.4px)`, backgroundSize: '18px 18px', WebkitMaskImage: 'linear-gradient(115deg, #000 0%, transparent 55%)', maskImage: 'linear-gradient(115deg, #000 0%, transparent 55%)' }} />}
+                  <Box style={{ position: 'absolute', right: -8, top: '50%', transform: 'translateY(-50%)', opacity: 0.18, color: accent ?? 'var(--mantine-color-violet-4)' }}>
+                    <ListTypeGraphic type={list.type} size={64} />
+                  </Box>
+                </>
+              )}
             </Box>
-          )}
-        </Box>
+          )
+        })()}
 
         {/* Info */}
         <Box style={{ padding: "14px 16px", flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -93,6 +106,24 @@ function PublicListCard({ list }: { list: PublicList }) {
 
 function RouteComponent() {
   const { data: lists } = useSuspenseQuery(publicListsQueryOptions())
+  const [selectedUser, setSelectedUser] = useState<string | null>(null)
+
+  const uniqueUsers = useMemo(() => {
+    const seen = new Set<string>()
+    return lists
+      .filter((l) => l.profiles?.id)
+      .reduce<Array<{ value: string; label: string }>>((acc, l) => {
+        if (!seen.has(l.profiles!.id)) {
+          seen.add(l.profiles!.id)
+          acc.push({ value: l.profiles!.id, label: `@${l.profiles!.username ?? "unknown"}` })
+        }
+        return acc
+      }, [])
+  }, [lists])
+
+  const displayedLists = selectedUser
+    ? lists.filter((l) => l.profiles?.id === selectedUser)
+    : lists
 
   return (
     <Container size={1440} px="xl" pb="xl" pt="xl">
@@ -104,14 +135,33 @@ function RouteComponent() {
         <Text c="dimmed" size="sm">Community-curated game collections</Text>
       </Box>
 
-      {lists.length === 0 ? (
+      {lists.length > 0 && uniqueUsers.length > 1 && (
+        <Group mb="lg" gap="sm" align="center">
+          <Select
+            placeholder="All users"
+            data={uniqueUsers}
+            value={selectedUser}
+            onChange={setSelectedUser}
+            clearable
+            size="sm"
+            style={{ width: 200 }}
+          />
+          {selectedUser && (
+            <Text fz="sm" c="dark.2" ff="monospace">
+              {displayedLists.length} list{displayedLists.length !== 1 ? "s" : ""}
+            </Text>
+          )}
+        </Group>
+      )}
+
+      {displayedLists.length === 0 ? (
         <Box ta="center" py={64}>
           <Text fw={600} c="dark.1" mb={6}>No public lists yet</Text>
           <Text c="dark.2" fz="sm">Be the first to make a list public.</Text>
         </Box>
       ) : (
         <SimpleGrid cols={{ base: 2, xs: 3, sm: 4, md: 5, lg: 6 }} spacing="md">
-          {lists.map((l) => (
+          {displayedLists.map((l) => (
             <PublicListCard key={l.id} list={l} />
           ))}
         </SimpleGrid>
