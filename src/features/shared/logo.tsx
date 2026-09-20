@@ -1,7 +1,7 @@
-let _logoId = 0
+import { useId } from "react"
 
 export default function Logo({ size = 34 }: { size?: number }) {
-  const id = `logoShadow-${++_logoId}`
+  const id = `logoShadow-${useId().replace(/:/g, "")}`
   return (
     <svg width={size} height={size} viewBox="0 0 100 100" aria-label="Playra">
       <defs>

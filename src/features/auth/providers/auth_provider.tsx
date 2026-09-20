@@ -2,6 +2,7 @@ import type { AuthSession } from "@supabase/supabase-js"
 import { createContext, useEffect, useState } from "react"
 import supabase from "../../../lib/supabase_client"
 import type { Profile } from "../../profile/api/schema"
+import { useQueryClient } from "@tanstack/react-query"
 import useGetAuth from "../hooks/useGetAuth"
 
 export const AuthContext = createContext({
@@ -13,6 +14,7 @@ export const AuthContext = createContext({
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<AuthSession | null>(null)
   const [sessionLoading, setSessionLoading] = useState(true)
+  const qc = useQueryClient()
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -24,12 +26,13 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT") {
         setSession(null)
+        qc.clear()
       } else if (session) {
         setSession(session)
       }
     })
     return () => subscription.unsubscribe()
-  }, [])
+  }, [qc])
 
   const { data: profile = null, isLoading: profileLoading } = useGetAuth(session?.user?.id)
 

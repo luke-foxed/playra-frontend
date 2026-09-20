@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Box, Stack, Text, Slider, Group, ActionIcon, Tooltip } from '@mantine/core'
 import { ShuffleIcon } from '../../shared/icons'
 
@@ -96,20 +96,17 @@ export function AvatarSelector({
 
   const url = buildUrl(seed, sel)
 
-  useEffect(() => { onChange(url) }, []) // sync initial url to parent
+  // sync the initial url to the parent once (it may differ from the stored avatar)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { onChange(url) }, [])
 
-  const update = useCallback(
-    (key: Component, idx: number) => {
-      setSel((prev) => {
-        const next = { ...prev, [key]: idx }
-        onChange(buildUrl(seed, next))
-        return next
-      })
-    },
-    [seed, onChange],
-  )
+  const update = (key: Component, idx: number) => {
+    const next = { ...sel, [key]: idx }
+    setSel(next)
+    onChange(buildUrl(seed, next))
+  }
 
-  const shuffle = useCallback(() => {
+  const shuffle = () => {
     const newSeed = randomSeed()
     const newSel: Selections = {
       eyebrows: randIdx('eyebrows'),
@@ -121,7 +118,7 @@ export function AvatarSelector({
     setSeed(newSeed)
     setSel(newSel)
     onChange(buildUrl(newSeed, newSel))
-  }, [onChange])
+  }
 
   return (
     <Box

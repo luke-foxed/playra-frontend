@@ -3,55 +3,6 @@
 /* Selection color */
 ::selection { background: #8B6BFF; color: #fff; }
 
-/* Hero background pan on hover */
-.hero-container {
-  transform: translateZ(0);
-}
-.hero-bg-img {
-  position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center;
-  transition: transform 0.4s ease;
-}
-.hero-container:hover .hero-bg-img {
-  transform: scale(1.03);
-}
-
-/* Horizontal scroll rail with snap */
-.scroll-rail {
-  display: flex;
-  gap: 18px;
-  overflow-x: auto;
-  padding-bottom: 8px;
-  scroll-snap-type: x proximity;
-  scrollbar-width: thin;
-  scrollbar-color: var(--mantine-color-dark-4) transparent;
-}
-.scroll-rail > * {
-  scroll-snap-align: start;
-  flex-shrink: 0;
-}
-
-/* Nav links */
-.nav-link:hover {
-  background: var(--mantine-color-dark-5) !important;
-  color: var(--mantine-color-dark-0) !important;
-}
-
-/* Avatar button hover ring */
-.avatar-btn:hover .mantine-Avatar-root {
-  box-shadow: 0 0 0 2px var(--mantine-color-violet-5);
-  transition: box-shadow 0.15s;
-}
-
-/* Filter / status chips */
-.filter-chip:not([data-active]):hover {
-  border-color: rgba(255,255,255,0.32) !important;
-  background: rgba(255,255,255,0.1) !important;
-  color: #E2E4F0 !important;
-}
-
 /* Wishlist button loading pulse */
 @keyframes wishPulse {
   0%, 100% { opacity: 0.65; transform: scale(0.9); }

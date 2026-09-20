@@ -1,6 +1,7 @@
 import { useRouter } from "@tanstack/react-router"
 import { Alert, Button, Center, MantineProvider, Stack } from "@mantine/core"
 import { isAxiosError } from "axios"
+import { theme } from "../../theme"
 
 function getErrorContent(error: unknown) {
   if (isAxiosError(error)) {
@@ -17,7 +18,7 @@ export default function ErrorBoundary({ error }: { error: unknown }) {
   const { title, message, color } = getErrorContent(error)
 
   return (
-    <MantineProvider>
+    <MantineProvider theme={theme} defaultColorScheme="dark" withGlobalClasses>
       <Center h="60vh">
         <Stack align="center" maw={480} gap="md">
           <Alert color={color} title={title} w="100%">{message}</Alert>

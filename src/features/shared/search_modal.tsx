@@ -1,42 +1,39 @@
 import { useState, useEffect, useRef } from 'react'
-import { Modal, Box, Text, Group, Loader, Stack, Skeleton, Input, ActionIcon } from '@mantine/core'
+import { useDebouncedValue } from '@mantine/hooks'
+import { Modal, Box, Text, Group, Loader, Stack, Skeleton, Input, ActionIcon, Kbd, Flex, Center, UnstyledButton } from '@mantine/core'
 import { useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { getGames, popularGamesQueryOptions } from '../../features/games/api/games'
-import type { Game } from '../../features/games/api/schemas'
 import MetacriticBadge from './metacritic_badge'
-import { SearchIcon, XIcon, ChevronIcon } from './icons'
+import type { Game } from '../games/api/schemas'
+import { ChevronIcon, SearchIcon, XIcon } from './icons'
 
 type Props = { onClose: () => void }
 
 export default function SearchModal({ onClose }: Props) {
   const navigate = useNavigate()
   const [q, setQ] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [results, setResults] = useState<Game[]>([])
   const [active, setActive] = useState(0)
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const { data: popularData } = useQuery(popularGamesQueryOptions(8))
-  const displayed = q ? results : (popularData?.results ?? [])
+
+  const term = q.trim()
+  const [debouncedTerm] = useDebouncedValue(term, 280)
+  const { data: searchData, isFetching } = useQuery({
+    queryKey: ['games', 'search', debouncedTerm],
+    queryFn: () => getGames({ page: 1, page_size: 8, search: debouncedTerm }),
+    enabled: !!debouncedTerm,
+  })
+  const results = term ? (searchData?.results ?? []) : []
+  const loading = !!term && (debouncedTerm !== term || isFetching)
+  const displayed = term ? results : (popularData?.results ?? [])
 
   useEffect(() => { inputRef.current?.focus() }, [])
 
-  useEffect(() => {
-    if (timerRef.current) clearTimeout(timerRef.current)
-    if (!q.trim()) { setResults([]); setLoading(false); return }
-    setLoading(true)
-    timerRef.current = setTimeout(async () => {
-      try {
-        const data = await getGames({ page: 1, page_size: 8, search: q })
-        setResults(data.results)
-        setActive(0)
-      } finally {
-        setLoading(false)
-      }
-    }, 280)
-    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
-  }, [q])
+  const changeQuery = (value: string) => {
+    setQ(value)
+    setActive(0)
+  }
 
   const go = (id: number) => {
     onClose()
@@ -48,7 +45,7 @@ export default function SearchModal({ onClose }: Props) {
     if (!displayed.length) return
     if (e.key === 'ArrowDown') { e.preventDefault(); setActive((a) => Math.min(a + 1, displayed.length - 1)) }
     if (e.key === 'ArrowUp') { e.preventDefault(); setActive((a) => Math.max(a - 1, 0)) }
-    if (e.key === 'Enter') { e.preventDefault(); go(displayed[active].id) }
+    if (e.key === 'Enter') { e.preventDefault(); go(displayed[Math.min(active, displayed.length - 1)].id) }
   }
 
   return (
@@ -69,61 +66,34 @@ export default function SearchModal({ onClose }: Props) {
         body: { padding: 0 },
       }}
     >
-      {/* Input row */}
-      <Box style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+      <Flex align="center" gap={12} px={18} py={14} style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         <SearchIcon size={18} style={{ color: 'var(--mantine-color-dark-3)', flexShrink: 0 }} />
         <Input
           ref={inputRef}
           value={q}
-          onChange={(e) => setQ(e.target.value)}
+          onChange={(e) => changeQuery(e.target.value)}
           onKeyDown={onKey}
           placeholder="Search games..."
           variant="unstyled"
+          flex={1}
           styles={{
-            wrapper: { flex: 1 },
-            input: {
-              fontSize: 16,
-              fontWeight: 500,
-              color: 'var(--mantine-color-dark-0)',
-              background: 'transparent',
-              padding: 0,
-              height: 'auto',
-              minHeight: 'auto',
-            },
+            input: { fontSize: 16, fontWeight: 500, color: 'var(--mantine-color-dark-0)', background: 'transparent', padding: 0, height: 'auto', minHeight: 'auto' },
           }}
         />
         {loading && <Loader size={16} color="violet" />}
         {!loading && q && (
-          <ActionIcon variant="subtle" color="gray" size="sm" onClick={() => setQ('')}>
+          <ActionIcon variant="subtle" color="gray" size="sm" aria-label="Clear search" onClick={() => changeQuery('')}>
             <XIcon size={14} />
           </ActionIcon>
         )}
-        <Text
-          fz={11}
-          ff="monospace"
-          c="dark.2"
-          visibleFrom="sm"
-          style={{
-            background: 'var(--mantine-color-dark-5)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: 7,
-            padding: '4px 9px',
-            cursor: 'pointer',
-            flexShrink: 0,
-            userSelect: 'none',
-          }}
-          onClick={onClose}
-        >
-          esc
-        </Text>
-      </Box>
+        <Kbd visibleFrom="sm" style={{ cursor: 'pointer' }} onClick={onClose}>esc</Kbd>
+      </Flex>
 
-      {/* Results */}
-      <Box style={{ overflowY: 'auto', padding: 8, minHeight: 120, maxHeight: '60vh' }}>
+      <Box p={8} mih={120} mah="60vh" style={{ overflowY: 'auto' }}>
         {loading ? (
           <Stack gap={0}>
             {[0, 1, 2, 3].map((i) => (
-              <Box key={i} style={{ display: 'grid', gridTemplateColumns: '44px 1fr', gap: 14, alignItems: 'center', padding: '9px 12px' }}>
+              <Box key={i} px={12} py={9} display="grid" style={{ gridTemplateColumns: '44px 1fr', gap: 14, alignItems: 'center' }}>
                 <Skeleton width={44} height={44} radius={8} />
                 <Stack gap={7}>
                   <Skeleton height={11} width="60%" radius={5} />
@@ -132,71 +102,65 @@ export default function SearchModal({ onClose }: Props) {
               </Box>
             ))}
           </Stack>
-        ) : q && results.length === 0 ? (
-          <Box style={{ textAlign: 'center', padding: '48px 24px' }}>
+        ) : term && results.length === 0 ? (
+          <Center px={24} py={48}>
             <Text c="dark.2">No games found for "{q}"</Text>
-          </Box>
+          </Center>
         ) : (
           <>
-            <Text fz="xs" tt="uppercase" style={{ letterSpacing: 1.4 }} c="dark.2" fw={600} px={12} py={10}>
-              {q ? `${results.length} result${results.length !== 1 ? 's' : ''}` : 'Popular right now'}
+            <Text fz="xs" tt="uppercase" c="dark.2" fw={600} px={12} py={10} style={{ letterSpacing: 1.4 }}>
+              {term ? `${results.length} result${results.length !== 1 ? 's' : ''}` : 'Popular right now'}
             </Text>
             {displayed.map((g, i) => (
-              <button
-                key={g.id}
-                onClick={() => go(g.id)}
-                onMouseEnter={() => setActive(i)}
-                style={{
-                  width: '100%',
-                  display: 'grid',
-                  gridTemplateColumns: '44px 1fr auto auto',
-                  gap: 14,
-                  alignItems: 'center',
-                  padding: '9px 12px',
-                  borderRadius: 10,
-                  background: i === active ? 'var(--mantine-color-dark-5)' : 'none',
-                  border: 'none',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  transition: 'background 0.1s',
-                }}
-              >
-                <Box
-                  style={{
-                    width: 44, height: 44, borderRadius: 8, flexShrink: 0,
-                    background: g.background_image
-                      ? `url(${g.background_image}) center / cover no-repeat`
-                      : 'var(--mantine-color-dark-5)',
-                    boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)',
-                  }}
-                />
-                <Box style={{ minWidth: 0 }}>
-                  <Text fz="sm" fw={600} style={{ letterSpacing: -0.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} c="dark.0">
-                    {g.name}
-                  </Text>
-                  <Text fz="xs" c="dark.2" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {g.released?.slice(0, 4)} · {g.genres.map((x) => x.name).join(', ')}
-                  </Text>
-                </Box>
-                <MetacriticBadge score={g.metacritic} size={32} />
-                <ChevronIcon size={16} style={{ color: 'var(--mantine-color-dark-3)' }} />
-              </button>
+              <SearchResultRow key={g.id} game={g} active={i === active} onSelect={() => go(g.id)} onHover={() => setActive(i)} />
             ))}
           </>
         )}
       </Box>
 
-      {/* Footer */}
       <Group gap="lg" px="xl" py="sm" visibleFrom="sm" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
         {[['↑↓', 'navigate'], ['↵', 'open'], ['esc', 'close']].map(([k, l]) => (
           <Group key={k} gap={4}>
-            <Text fz={11} ff="monospace" c="dark.2"
-              style={{ background: 'var(--mantine-color-dark-5)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '2px 7px', lineHeight: 1.4 }}
-            >{k}</Text>
+            <Kbd size="xs">{k}</Kbd>
             <Text fz={12} c="dark.2">{l}</Text>
           </Group>
         ))}
       </Group>
     </Modal>
+  )
+}
+
+function SearchResultRow({ game, active, onSelect, onHover }: { game: Game; active: boolean; onSelect: () => void; onHover: () => void }) {
+  return (
+    <UnstyledButton
+      onClick={onSelect}
+      onMouseEnter={onHover}
+      w="100%"
+      px={12}
+      py={9}
+      bdrs={10}
+      bg={active ? 'dark.5' : undefined}
+      display="grid"
+      style={{ gridTemplateColumns: '44px 1fr auto auto', gap: 14, alignItems: 'center' }}
+    >
+      <Box
+        w={44}
+        h={44}
+        bdrs={8}
+        bg="dark.5"
+        style={{
+          backgroundImage: game.background_image ? `url("${game.background_image}")` : undefined,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)',
+        }}
+      />
+      <Box miw={0}>
+        <Text fz="sm" fw={600} c="dark.0" truncate style={{ letterSpacing: -0.3 }}>{game.name}</Text>
+        <Text fz="xs" c="dark.2" truncate>{game.released?.slice(0, 4)} · {game.genres.map((x) => x.name).join(', ')}</Text>
+      </Box>
+      <MetacriticBadge score={game.metacritic} size={32} />
+      <ChevronIcon size={16} style={{ color: 'var(--mantine-color-dark-3)' }} />
+    </UnstyledButton>
   )
 }

@@ -1,9 +1,11 @@
 import { z } from "zod"
 
 // Response schemas
-export const GenreSchema = z.object({ id: z.number(), name: z.string(), slug: z.string() })
+export const NamedRefSchema = z.object({ id: z.number(), name: z.string(), slug: z.string() })
+
+export const GenreSchema = NamedRefSchema
 export const PlatformSchema = z.object({
-  platform: z.object({ id: z.number(), name: z.string(), slug: z.string() }),
+  platform: NamedRefSchema,
 })
 export const RatingSchema = z.object({
   id: z.number(),
@@ -12,9 +14,9 @@ export const RatingSchema = z.object({
   percent: z.number(),
 })
 export const ScreenshotSchema = z.object({ id: z.number(), image: z.string() })
-export const DeveloperSchema = z.object({ id: z.number(), name: z.string(), slug: z.string() })
-export const PublisherSchema = z.object({ id: z.number(), name: z.string(), slug: z.string() })
-export const TagSchema = z.object({ id: z.number(), name: z.string(), slug: z.string() })
+export const DeveloperSchema = NamedRefSchema
+export const PublisherSchema = NamedRefSchema
+export const TagSchema = NamedRefSchema
 
 export const GameSchema = z.object({
   id: z.number(),
@@ -34,7 +36,7 @@ export const GameSchema = z.object({
   short_screenshots: z.array(ScreenshotSchema).optional(),
 })
 
-export const EsrbRatingSchema = z.object({ id: z.number(), name: z.string(), slug: z.string() })
+export const EsrbRatingSchema = NamedRefSchema
 
 export const GameDetailSchema = GameSchema.extend({
   description: z.string().optional().catch(undefined),

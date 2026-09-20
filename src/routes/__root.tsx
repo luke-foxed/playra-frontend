@@ -35,6 +35,9 @@ function RootComponent() {
   )
 }
 
+const isAuthPath = (pathname: string) => ['/login', '/signup'].some((p) => pathname.startsWith(p))
+const isBarePath = (pathname: string) => isAuthPath(pathname) || pathname.startsWith('/restricted')
+
 function AppContent() {
   const { session, loading: authLoading } = useContext(AuthContext)
   const navigate = useNavigate()
@@ -44,8 +47,7 @@ function AppContent() {
   useEffect(() => {
     if (authLoading) return
     const wasAuthed = prevSessionRef.current !== undefined && prevSessionRef.current !== null
-    const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup')
-    if (wasAuthed && !session && !isAuthPage) {
+    if (wasAuthed && !session && !isAuthPath(pathname)) {
       navigate({ to: '/login' })
     }
     prevSessionRef.current = session
@@ -53,7 +55,7 @@ function AppContent() {
   const isTransitioning = useRouterState({ select: (s) => s.isTransitioning })
   const isFetching = useIsFetching()
 
-  const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup')
+  const hideHeader = isBarePath(pathname)
 
   const [showTransitionLoader, setShowTransitionLoader] = useState(false)
   useEffect(() => {
@@ -74,10 +76,10 @@ function AppContent() {
         <div className="fetch-bar"><span /></div>
       )}
 
-      <AppShell header={{ height: isAuthPage ? 0 : 68 }} padding={0}>
+      <AppShell header={{ height: hideHeader ? 0 : 68 }} padding={0}>
         <AppShell.Header
+          display={hideHeader ? 'none' : undefined}
           style={{
-            display: isAuthPage ? 'none' : undefined,
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
             background: 'color-mix(in oklab, var(--mantine-color-dark-7) 82%, transparent)',

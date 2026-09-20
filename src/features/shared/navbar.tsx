@@ -1,138 +1,105 @@
-import { useContext, useEffect, useState } from 'react'
-import { Link, useRouterState, useNavigate } from '@tanstack/react-router'
-import { Group, Text, Button, UnstyledButton, Avatar, Box, Drawer, ActionIcon, Burger, Stack } from '@mantine/core'
-import { useDisclosure } from '@mantine/hooks'
+import { useContext } from 'react'
+import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
+import { Group, Text, Button, UnstyledButton, Drawer, ActionIcon, Burger, Stack, Kbd, NavLink } from '@mantine/core'
+import { useDisclosure, useHotkeys, useHover } from '@mantine/hooks'
 import { AuthContext } from '../auth/providers/auth_provider'
 import supabase from '../../lib/supabase_client'
 import Logo from './logo'
 import SearchModal from './search_modal'
+import UserAvatar from './user_avatar'
 import { SearchIcon } from './icons'
 
+// polymorphic `component` can't infer TanStack Link props
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const LinkCast = Link as any
 
-function avatarColor(str: string) {
-  let h = 0
-  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) % 360
-  return `radial-gradient(circle at 30% 25%, hsl(${h} 80% 68%), hsl(${(h + 40) % 360} 70% 42%))`
-}
-
 export default function Navbar() {
   const { profile } = useContext(AuthContext)
-  const [searchOpen, setSearchOpen] = useState(false)
-  const [drawerOpen, { open: openDrawer, close: closeDrawer }] = useDisclosure(false)
-  const location = useRouterState({ select: (s) => s.location.pathname })
   const navigate = useNavigate()
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const [searchOpen, { open: openSearch, close: closeSearch }] = useDisclosure(false)
+  const [drawerOpen, { open: openDrawer, close: closeDrawer }] = useDisclosure(false)
+  const { hovered: avatarHovered, ref: avatarRef } = useHover<HTMLAnchorElement>()
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (
-        (e.key === 'k' && (e.metaKey || e.ctrlKey)) ||
-        (e.key === '/' && !['INPUT', 'TEXTAREA'].includes((document.activeElement as HTMLElement)?.tagName ?? ''))
-      ) {
-        e.preventDefault()
-        setSearchOpen(true)
-      }
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [])
-
-  const isActive = (path: string) =>
-    path === '/' ? location === '/' : location.startsWith(path)
-
-  const navLink = (path: string) => ({
-    padding: '8px 14px', borderRadius: 999, fontSize: 14, fontWeight: 500,
-    color: isActive(path) ? 'var(--mantine-color-dark-0)' : 'var(--mantine-color-dark-1)',
-    background: isActive(path) ? 'var(--mantine-color-dark-5)' : 'transparent',
-    transition: 'background 0.15s, color 0.15s', textDecoration: 'none', whiteSpace: 'nowrap' as const,
-  })
-
-  const drawerNavLink = (path: string) => ({
-    ...navLink(path),
-    display: 'block',
-    width: '100%',
-    padding: '10px 14px',
-  })
+  useHotkeys([['mod+K', openSearch]], [])
+  useHotkeys([['/', openSearch]])
 
   const signOut = async () => {
     await supabase.auth.signOut()
     navigate({ to: '/login' })
   }
 
+  const links = profile
+    ? [
+        { label: 'Home', to: '/', match: (p: string) => p === '/' },
+        { label: 'Games', to: '/games', search: { page: 1, page_size: 20 }, match: (p: string) => p.startsWith('/games') },
+        { label: 'Lists', to: '/lists', match: (p: string) => p.startsWith('/lists') },
+        { label: 'Profile', to: '/profile/$id', params: { id: profile.id }, match: (p: string) => p.startsWith('/profile') },
+        ...(profile.role === 'admin' ? [{ label: 'Admin', to: '/admin', match: (p: string) => p.startsWith('/admin') }] : []),
+      ]
+    : []
+
+  const displayName = profile ? (profile.username ?? profile.email) : ''
+
   return (
     <>
       <Group px="xl" h="100%" justify="space-between" maw={1440} mx="auto" wrap="nowrap" gap="lg">
-        <UnstyledButton
-          component={LinkCast}
-          to="/"
-          style={{ display: 'flex', alignItems: 'center', gap: 11, textDecoration: 'none', flexShrink: 0 }}
-        >
+        <UnstyledButton component={LinkCast} to="/" display="flex" style={{ alignItems: 'center', gap: 11, flexShrink: 0 }}>
           <Logo size={34} />
-          <Text fw={700} fz={23} style={{ letterSpacing: -0.8 }} c="dark.0">playra</Text>
+          <Text fw={700} fz={23} c="dark.0" style={{ letterSpacing: -0.8 }}>playra</Text>
         </UnstyledButton>
 
+        <Group gap={6} visibleFrom="sm" flex={1} wrap="nowrap">
+          {links.map(({ label, match, ...link }) => (
+            <Button
+              key={label}
+              component={LinkCast}
+              {...link}
+              variant={match(pathname) ? 'light' : 'subtle'}
+              color="gray"
+              radius="xl"
+            >
+              {label}
+            </Button>
+          ))}
+        </Group>
+
         {profile && (
-          <Group gap={6} style={{ flexShrink: 0 }} visibleFrom="sm">
-            <Link to="/" className="nav-link" style={navLink('/')}>Home</Link>
-            <Link to="/games" search={{ page: 1, page_size: 20 }} className="nav-link" style={navLink('/games')}>Games</Link>
-            <Link to="/lists" className="nav-link" style={navLink('/lists')}>Lists</Link>
-            <Link to="/profile/$id" params={{ id: profile.id }} className="nav-link" style={navLink('/profile')}>Profile</Link>
-            {profile.role === 'admin' && <Link to="/admin" className="nav-link" style={navLink('/admin')}>Admin</Link>}
+          <Button
+            visibleFrom="sm"
+            variant="default"
+            radius="xl"
+            miw={220}
+            justify="space-between"
+            c="dark.2"
+            leftSection={<SearchIcon size={17} />}
+            rightSection={<Kbd>/</Kbd>}
+            onClick={openSearch}
+          >
+            Search games…
+          </Button>
+        )}
+
+        {profile && (
+          <Group gap="xs" hiddenFrom="sm">
+            <ActionIcon variant="subtle" color="gray" size="lg" aria-label="Search" onClick={openSearch}>
+              <SearchIcon size={18} />
+            </ActionIcon>
+            <Burger opened={drawerOpen} onClick={openDrawer} size="sm" color="var(--mantine-color-dark-1)" aria-label="Open menu" />
           </Group>
         )}
 
-        <Box style={{ flex: 1 }} visibleFrom="sm" />
-
-        {profile && (
-          <UnstyledButton
-            onClick={() => setSearchOpen(true)}
-            visibleFrom="sm"
-            style={{
-              display: 'flex', alignItems: 'center', gap: 9,
-              background: 'var(--mantine-color-dark-6)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 999, padding: '9px 15px', minWidth: 220, cursor: 'pointer',
-            }}
-          >
-            <SearchIcon size={17} style={{ color: 'var(--mantine-color-dark-2)', flexShrink: 0 }} />
-            <Text fz="sm" c="dark.2" style={{ flex: 1 }}>Search games…</Text>
-            <Text fz={11} c="dark.2" ff="monospace"
-              style={{ background: 'var(--mantine-color-dark-5)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '2px 7px' }}>
-              /
-            </Text>
-          </UnstyledButton>
-        )}
-
-        {/* Mobile: search icon + burger */}
-        <Group gap="xs" hiddenFrom="sm" style={{ flex: 1, justifyContent: 'flex-end' }}>
-          {profile && (
-            <ActionIcon variant="subtle" color="gray" size="lg" onClick={() => setSearchOpen(true)}>
-              <SearchIcon size={18} />
-            </ActionIcon>
-          )}
-          {profile && (
-            <Burger opened={drawerOpen} onClick={openDrawer} size="sm" color="var(--mantine-color-dark-1)" />
-          )}
-        </Group>
-
         {profile ? (
           <Group gap="xs" style={{ flexShrink: 0 }}>
-            <UnstyledButton component={LinkCast} to="/profile/$id" params={{ id: profile.id }} className="avatar-btn">
-              <Avatar
-                src={profile.avatar_url ?? undefined}
-                alt={profile.username ?? profile.email}
+            <UnstyledButton ref={avatarRef} component={LinkCast} to="/profile/$id" params={{ id: profile.id }} aria-label="Your profile">
+              <UserAvatar
+                avatarUrl={profile.avatar_url}
+                name={displayName}
                 size={38}
-                radius="xl"
-                style={{ transform: 'translateZ(0)', ...(!profile.avatar_url ? { background: avatarColor(profile?.username ?? profile.email) } : {}) }}
-                color="violet"
-              >
-                {!profile.avatar_url && ((profile?.username ?? profile.email)[0] ?? '?').toUpperCase()}
-              </Avatar>
+                style={{ boxShadow: avatarHovered ? '0 0 0 2px var(--mantine-color-violet-5)' : 'none', transition: 'box-shadow 0.15s' }}
+              />
             </UnstyledButton>
-            <Button variant="subtle" color="gray" size="sm" visibleFrom="sm" onClick={signOut}>
-              Sign out
-            </Button>
+            <Button variant="subtle" color="gray" size="sm" visibleFrom="sm" onClick={signOut}>Sign out</Button>
           </Group>
         ) : (
           <Group gap="xs" style={{ flexShrink: 0 }}>
@@ -148,32 +115,37 @@ export default function Navbar() {
         position="left"
         size="xs"
         padding="xl"
-        styles={{
-          content: { background: 'var(--mantine-color-dark-7)' },
-          header: { background: 'var(--mantine-color-dark-7)' },
-        }}
         title={
           <Group gap={10}>
             <Logo size={28} />
-            <Text fw={700} fz={20} style={{ letterSpacing: -0.6 }} c="dark.0">playra</Text>
+            <Text fw={700} fz={20} c="dark.0" style={{ letterSpacing: -0.6 }}>playra</Text>
           </Group>
         }
       >
-        <Stack gap="xs" mt="md">
-          {profile && <Link to="/" style={drawerNavLink('/')} onClick={closeDrawer}>Home</Link>}
-          {profile && <Link to="/games" search={{ page: 1, page_size: 20 }} style={drawerNavLink('/games')} onClick={closeDrawer}>Games</Link>}
-          {profile && <Link to="/lists" style={drawerNavLink('/lists')} onClick={closeDrawer}>Lists</Link>}
-          {profile && <Link to="/profile/$id" params={{ id: profile.id }} style={drawerNavLink('/profile')} onClick={closeDrawer}>Profile</Link>}
-          {profile?.role === 'admin' && <Link to="/admin" style={drawerNavLink('/admin')} onClick={closeDrawer}>Admin</Link>}
-        </Stack>
         {profile && (
-          <Button variant="subtle" color="gray" fullWidth mt="xl" onClick={async () => { await signOut(); closeDrawer() }}>
-            Sign out
-          </Button>
+          <>
+            <Stack gap="xs" mt="md">
+              {links.map(({ label, match, ...link }) => (
+                <NavLink
+                  key={label}
+                  component={LinkCast}
+                  {...link}
+                  label={label}
+                  active={match(pathname)}
+                  variant="light"
+                  onClick={closeDrawer}
+                  style={{ borderRadius: 999 }}
+                />
+              ))}
+            </Stack>
+            <Button variant="subtle" color="gray" fullWidth mt="xl" onClick={async () => { await signOut(); closeDrawer() }}>
+              Sign out
+            </Button>
+          </>
         )}
       </Drawer>
 
-      {searchOpen && <SearchModal onClose={() => setSearchOpen(false)} />}
+      {searchOpen && <SearchModal onClose={closeSearch} />}
     </>
   )
 }

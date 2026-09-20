@@ -45,14 +45,14 @@ export default function ListPanel({ profileUserId, currentUserId }: Props) {
 
   const { data: lists, isLoading: listsLoading, isError: listsError } = useGetLists(profileUserId)
   const { data: listDetail, isLoading: detailLoading } = useGetList(selectedListId)
-  const { createList, isLoading: createLoading } = useCreateList(profileUserId)
-  const { removeGame, isLoading: removeLoading } = useRemoveGameFromList(selectedListId)
+  const { createList, isLoading: createLoading } = useCreateList()
+  const { removeGame, isLoading: removeLoading } = useRemoveGameFromList()
 
   const togglePublic = async (list: { id: string; name: string; description: string | null; is_public: boolean }) => {
     setTogglingId(list.id)
     try {
       await updateList(list.id, { name: list.name, description: list.description, is_public: !list.is_public })
-      qc.invalidateQueries({ queryKey: ["lists", profileUserId] })
+      qc.invalidateQueries({ queryKey: ["lists"] })
     } finally {
       setTogglingId(null)
     }
@@ -156,7 +156,7 @@ export default function ListPanel({ profileUserId, currentUserId }: Props) {
                               loading={removeLoading}
                               onClick={(e) => {
                                 e.preventDefault()
-                                removeGame({ listId: listDetail.id, gameId: game.game_id })
+                                removeGame({ listId: listDetail.id, gameId: game.game_id }).catch(() => {})
                               }}
                               aria-label="Remove from list"
                             >

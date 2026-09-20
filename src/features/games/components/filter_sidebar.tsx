@@ -1,58 +1,21 @@
-import { Box, Group, Text, Slider, UnstyledButton } from "@mantine/core"
+import { Box, Chip, Flex, Group, Text, Slider } from "@mantine/core"
+import type { MantineBreakpoint } from "@mantine/core"
 import { YearPickerInput } from "@mantine/dates"
-import { useState, useEffect, useRef } from "react"
-import { PLATFORMS, chipBase } from "../constants"
+import { useState } from "react"
+import { useDebouncedCallback } from "@mantine/hooks"
+import { PLATFORMS } from "../constants"
 import type { Status } from "../constants"
 import useGetGenres from "../hooks/useGetGenres"
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+function FilterSection({ label, children, py = [20, 20] }: { label: React.ReactNode; children: React.ReactNode; py?: [number, number] }) {
   return (
-    <Group gap={9} mb={12} align="center">
-      <Box style={{ width: 3, height: 13, borderRadius: 2, background: "#7355E8", flexShrink: 0 }} />
-      <Text fz="sm" tt="uppercase" fw={700} style={{ letterSpacing: 1.2, color: "#8B8EB8" }}>
-        {children}
-      </Text>
-    </Group>
-  )
-}
-
-function FilterChip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
-  return (
-    <UnstyledButton
-      onClick={onClick}
-      className="filter-chip"
-      data-active={active || undefined}
-      style={{
-        ...chipBase,
-        padding: "5px 12px",
-        fontWeight: active ? 700 : 500,
-        border: active ? "1px solid #8B6BFF" : "1px solid rgba(255,255,255,0.18)",
-        background: active ? "#8B6BFF" : "rgba(255,255,255,0.06)",
-        color: active ? "#fff" : "#B7B8D6",
-        boxShadow: active ? "0 0 14px rgba(139,107,255,0.55), inset 0 1px 0 rgba(255,255,255,0.2)" : "none",
-      }}>
-      {label}
-    </UnstyledButton>
-  )
-}
-
-function StatusChip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
-  return (
-    <UnstyledButton
-      onClick={onClick}
-      className="filter-chip"
-      data-active={active || undefined}
-      style={{
-        ...chipBase,
-        padding: "6px 14px",
-        fontWeight: 700,
-        border: active ? "1px solid transparent" : "1px solid rgba(255,255,255,0.18)",
-        background: active ? "linear-gradient(135deg, #9B7BFF, #7355E8)" : "rgba(255,255,255,0.06)",
-        color: active ? "#fff" : "#B7B8D6",
-        boxShadow: active ? "0 0 18px rgba(139,107,255,0.6), inset 0 1px 0 rgba(255,255,255,0.2)" : "none",
-      }}>
-      {label}
-    </UnstyledButton>
+    <Box px={18} pt={py[0]} pb={py[1]} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+      <Group gap={9} mb={12} align="center">
+        <Box w={3} h={13} bdrs={2} bg="#7355E8" style={{ flexShrink: 0 }} />
+        <Text fz="sm" tt="uppercase" fw={700} c="#8B8EB8" style={{ letterSpacing: 1.2 }}>{label}</Text>
+      </Group>
+      {children}
+    </Box>
   )
 }
 
@@ -67,63 +30,45 @@ type SectionsProps = {
   onGenreToggle: (slug: string) => void
   onPlatformToggle: (id: string) => void
   onMinScoreChange: (val: number) => void
-  onLocalFromChange: (v: string) => void
-  onLocalToChange: (v: string) => void
-}
-
-function Divider() {
-  return <Box style={{ height: 1, background: "rgba(255,255,255,0.05)" }} />
+  onLocalRangeChange: (from: string, to: string) => void
 }
 
 function FilterSections({
   currentStatus, currentGenres, currentPlatforms, minScore, localFrom, localTo,
   onStatusChange, onGenreToggle, onPlatformToggle, onMinScoreChange,
-  onLocalFromChange, onLocalToChange,
+  onLocalRangeChange,
 }: SectionsProps) {
   const { data: genres = [] } = useGetGenres()
 
   return (
     <>
-      <Box px={18} pt={22} pb={20}>
-        <SectionLabel>Status</SectionLabel>
+      <FilterSection label="Status" py={[22, 20]}>
         <Group gap={6}>
           {(["all", "released", "upcoming"] as Status[]).map((s) => (
-            <StatusChip
-              key={s}
-              label={s.charAt(0).toUpperCase() + s.slice(1)}
-              active={currentStatus === s}
-              onClick={() => onStatusChange(s)}
-            />
+            <Chip key={s} size="sm" checked={currentStatus === s} onChange={() => onStatusChange(s)}>
+              {s.charAt(0).toUpperCase() + s.slice(1)}
+            </Chip>
           ))}
         </Group>
-      </Box>
+      </FilterSection>
 
-      <Divider />
-
-      <Box px={18} pt={20} pb={20}>
-        <SectionLabel>Genre</SectionLabel>
-        <Box style={{ display: "flex", flexWrap: "wrap", gap: "7px 6px" }}>
+      <FilterSection label="Genre">
+        <Flex wrap="wrap" gap="7px 6px">
           {genres.map((g) => (
-            <FilterChip key={g.slug} label={g.name} active={currentGenres.includes(g.slug)} onClick={() => onGenreToggle(g.slug)} />
+            <Chip key={g.slug} checked={currentGenres.includes(g.slug)} onChange={() => onGenreToggle(g.slug)}>{g.name}</Chip>
           ))}
-        </Box>
-      </Box>
+        </Flex>
+      </FilterSection>
 
-      <Divider />
-
-      <Box px={18} pt={20} pb={20}>
-        <SectionLabel>Platform</SectionLabel>
-        <Box style={{ display: "flex", flexWrap: "wrap", gap: "7px 6px" }}>
+      <FilterSection label="Platform">
+        <Flex wrap="wrap" gap="7px 6px">
           {PLATFORMS.map((p) => (
-            <FilterChip key={p.id} label={p.label} active={currentPlatforms.includes(p.id)} onClick={() => onPlatformToggle(p.id)} />
+            <Chip key={p.id} checked={currentPlatforms.includes(p.id)} onChange={() => onPlatformToggle(p.id)}>{p.label}</Chip>
           ))}
-        </Box>
-      </Box>
+        </Flex>
+      </FilterSection>
 
-      <Divider />
-
-      <Box px={18} pt={20} pb={26}>
-        <SectionLabel>Min critic score{minScore ? ` · ${minScore}` : ""}</SectionLabel>
+      <FilterSection label={`Min critic score${minScore ? ` · ${minScore}` : ""}`} py={[20, 26]}>
         <Slider
           value={minScore}
           onChange={onMinScoreChange}
@@ -138,12 +83,9 @@ function FilterSections({
           <Text fz="xs" c="dark.3" ff="monospace">Any</Text>
           <Text fz="xs" c="dark.3" ff="monospace">95</Text>
         </Group>
-      </Box>
+      </FilterSection>
 
-      <Divider />
-
-      <Box px={18} pt={20} pb={22}>
-        <SectionLabel>Release year</SectionLabel>
+      <FilterSection label="Release year" py={[20, 22]}>
         <YearPickerInput
           type="range"
           placeholder="Any range"
@@ -155,8 +97,7 @@ function FilterSections({
           ]}
           onChange={(val) => {
             const [from, to] = val as [string | null, string | null]
-            onLocalFromChange(from ? from.slice(0, 4) : "")
-            onLocalToChange(to ? to.slice(0, 4) : "")
+            onLocalRangeChange(from ? from.slice(0, 4) : "", to ? to.slice(0, 4) : "")
           }}
           size="xs"
           styles={{
@@ -170,7 +111,7 @@ function FilterSections({
             yearsListCell: { color: "#B7B8D6" },
           }}
         />
-      </Box>
+      </FilterSection>
     </>
   )
 }
@@ -178,6 +119,7 @@ function FilterSections({
 type Props = {
   open: boolean
   inDrawer?: boolean
+  visibleFrom?: MantineBreakpoint
   currentStatus: Status
   currentGenres: string[]
   currentPlatforms: string[]
@@ -192,52 +134,50 @@ type Props = {
 }
 
 export default function FilterSidebar({
-  open, inDrawer, currentStatus, currentGenres, currentPlatforms, minScore, dateFrom, dateTo,
+  open, inDrawer, visibleFrom, currentStatus, currentGenres, currentPlatforms, minScore, dateFrom, dateTo,
   onStatusChange, onGenreToggle, onPlatformToggle, onMinScoreChange, onDateRangeChange,
 }: Props) {
-  const [localFrom, setLocalFrom] = useState(dateFrom)
-  const [localTo, setLocalTo] = useState(dateTo)
-  const isExternalUpdate = useRef(false)
+  const [draft, setDraft] = useState<{ from: string; to: string } | null>(null)
+  const [urlDates, setUrlDates] = useState({ dateFrom, dateTo })
+  if (urlDates.dateFrom !== dateFrom || urlDates.dateTo !== dateTo) {
+    // URL changed externally (e.g. status preset clears the range) — drop the draft
+    setUrlDates({ dateFrom, dateTo })
+    setDraft(null)
+  }
+  const localFrom = draft?.from ?? dateFrom
+  const localTo = draft?.to ?? dateTo
 
-  // Sync when URL changes (e.g. status preset clears custom range)
-  useEffect(() => {
-    isExternalUpdate.current = true
-    setLocalFrom(dateFrom)
-    setLocalTo(dateTo)
-  }, [dateFrom, dateTo])
+  const fireDateRange = useDebouncedCallback((from: string, to: string) => {
+    const complete = (!!from && !!to) || (!from && !to)
+    if (complete) onDateRangeChange(from, to)
+  }, 600)
 
-  // Debounced fire — skips URL-driven syncs
-  useEffect(() => {
-    if (isExternalUpdate.current) {
-      isExternalUpdate.current = false
-      return
-    }
-    const complete = (!!localFrom && !!localTo) || (!localFrom && !localTo)
-    if (!complete) return
-    const id = setTimeout(() => onDateRangeChange(localFrom, localTo), 600)
-    return () => clearTimeout(id)
-  }, [localFrom, localTo]) // eslint-disable-line react-hooks/exhaustive-deps
+  const changeLocalRange = (from: string, to: string) => {
+    setDraft({ from, to })
+    fireDateRange(from, to)
+  }
 
   const sectionsProps: SectionsProps = {
     currentStatus, currentGenres, currentPlatforms, minScore, localFrom, localTo,
     onStatusChange, onGenreToggle, onPlatformToggle, onMinScoreChange,
-    onLocalFromChange: setLocalFrom, onLocalToChange: setLocalTo,
+    onLocalRangeChange: changeLocalRange,
   }
 
   return (
     <Box
+      visibleFrom={visibleFrom}
+      w={inDrawer ? '100%' : open ? 248 : 0}
+      miw={inDrawer ? '100%' : open ? 248 : 0}
       style={{
-        width: inDrawer ? '100%' : open ? 248 : 0,
-        minWidth: inDrawer ? '100%' : open ? 248 : 0,
-        transition: "width 0.28s ease, min-width 0.28s ease",
         flexShrink: 0,
+        transition: "width 0.28s ease, min-width 0.28s ease",
         ...(inDrawer ? {} : { overflow: "hidden", position: "sticky", top: 88, alignSelf: "flex-start" }),
       }}>
-      <Box style={{ width: inDrawer ? '100%' : 248 }}>
+      <Box w={inDrawer ? '100%' : 248}>
         {inDrawer ? (
           <FilterSections {...sectionsProps} />
         ) : (
-          <Box style={{ background: "#0E1428", border: "1px solid rgba(139,107,255,0.18)", borderRadius: 16, overflow: "hidden" }}>
+          <Box bg="#0E1428" bdrs={16} bd="1px solid rgba(139,107,255,0.18)" style={{ overflow: "hidden" }}>
             <FilterSections {...sectionsProps} />
           </Box>
         )}

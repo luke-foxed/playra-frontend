@@ -1,9 +1,9 @@
 
 import { queryOptions } from "@tanstack/react-query"
+import { isAxiosError } from "axios"
 import apiClient from "../../../lib/api_client"
 import { GameDetailSchema, GamesResponseSchema, UserGameSchema, ScreenshotsResponseSchema } from "./schemas"
 import type { GameDetail, GamesResponse, GetGamesParams, UserGame, Game, ScreenshotsResponse } from "./schemas"
-
 
 export async function getGames(params?: GetGamesParams): Promise<GamesResponse> {
   const { data: response } = await apiClient.get("/v1/games", { params })
@@ -35,8 +35,10 @@ export async function getGameSeries(id: number): Promise<Game[]> {
     const { data: response } = await apiClient.get(`/v1/games/${id}/game-series`)
     const parsed = GamesResponseSchema.safeParse(response.data)
     return parsed.success ? parsed.data.results : []
-  } catch {
-    return []
+  } catch (error) {
+    // not every game has a series; anything else (network, 5xx) is a real failure
+    if (isAxiosError(error) && error.response?.status === 404) return []
+    throw error
   }
 }
 
@@ -51,13 +53,9 @@ export async function getSimilarGames(id: number, game: GameDetail): Promise<Gam
   const genreId = game.genres[0]?.id
   if (!genreId) return series
 
-  try {
-    const data = await getGames({ page: 1, page_size: needed + 8, genres: String(genreId), ordering: '-metacritic' })
-    const filler = data.results.filter((g) => !exclude.has(g.id)).slice(0, needed)
-    return [...series, ...filler]
-  } catch {
-    return series
-  }
+  const data = await getGames({ page: 1, page_size: needed + 8, genres: String(genreId), ordering: '-metacritic' })
+  const filler = data.results.filter((g) => !exclude.has(g.id)).slice(0, needed)
+  return [...series, ...filler]
 }
 
 export async function getGameScreenshots(id: number): Promise<ScreenshotsResponse> {
@@ -77,7 +75,8 @@ export const userGameQueryOptions = (id: number) =>
 
 export const gamesQueryOptions = (params: GetGamesParams) =>
   queryOptions({
-    queryKey: ["games", params],
+    // sorted so the same params in a different key order share one cache entry
+    queryKey: ["games", Object.fromEntries(Object.entries(params).sort())],
     queryFn: () => getGames(params),
     staleTime: 5 * 60 * 1000,
   })

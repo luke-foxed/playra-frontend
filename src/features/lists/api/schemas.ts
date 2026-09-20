@@ -11,6 +11,7 @@ export const ListGameSchema = z.object({
   metacritic: z.number().nullable().catch(null),
   background_image: z.string().nullable().catch(null),
   user_rating: z.number().nullable().optional(),
+  added_at: z.string().nullable().optional(),
 })
 
 export const ListCreatorSchema = z.object({

@@ -1,8 +1,9 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
 import { useContext, useEffect } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { z } from "zod"
 import { Box, Text, Title, Anchor } from "@mantine/core"
+import supabase from "../../lib/supabase_client"
 import { AuthContext } from "../../features/auth/providers/auth_provider"
 import { profileQueryOptions } from "../../features/profile/api/profile"
 
@@ -13,6 +14,10 @@ const RestrictedSearchSchema = z.object({
 export const Route = createFileRoute("/restricted/")({
   component: RouteComponent,
   validateSearch: RestrictedSearchSchema.parse,
+  beforeLoad: async ({ location }) => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) throw redirect({ to: "/login", search: { redirect: location.href } })
+  },
 })
 
 const ClockIcon = () => (
@@ -45,16 +50,20 @@ const content = {
 }
 
 function RouteComponent() {
-  const { role } = Route.useSearch()
-  const { title, message, accent, Icon } = content[role]
+  const { role: hintedRole } = Route.useSearch()
   const { session } = useContext(AuthContext)
   const navigate = useNavigate()
 
   const { data: profile } = useQuery({
     ...profileQueryOptions(session?.user?.id ?? ''),
     enabled: !!session?.user?.id,
-    refetchInterval: 5000,
+    // only a pending account can change state on its own (an admin approves it)
+    refetchInterval: (query) => (query.state.data?.role === 'pending' ? 5000 : false),
   })
+
+  // the profile is the source of truth; the search param is only a hint until it loads
+  const role = profile?.role === 'suspended' || profile?.role === 'pending' ? profile.role : hintedRole
+  const { title, message, accent, Icon } = content[role]
 
   useEffect(() => {
     if (profile?.role === 'active' || profile?.role === 'admin') {
@@ -65,11 +74,10 @@ function RouteComponent() {
   return (
     <Box
       style={{
-        minHeight: "100vh",
+        minHeight: "100dvh",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        marginTop: -68,
         background: "var(--mantine-color-dark-8)",
       }}
     >
@@ -134,7 +142,12 @@ function RouteComponent() {
           <Box style={{ height: 1, background: "rgba(255,255,255,0.07)", margin: "28px 0 24px" }} />
 
           <Anchor
-            href="/login"
+            component="button"
+            type="button"
+            onClick={async () => {
+              await supabase.auth.signOut()
+              navigate({ to: "/login", search: {} })
+            }}
             style={{
               display: "inline-flex",
               alignItems: "center",

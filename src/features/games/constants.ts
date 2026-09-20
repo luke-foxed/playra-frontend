@@ -61,13 +61,15 @@ export const PLATFORMS = [
 
 export type Status = "all" | "released" | "upcoming"
 
-export const chipBase: React.CSSProperties = {
-  borderRadius: 20,
-  fontSize: 12,
-  fontFamily: "'Sora', system-ui, sans-serif",
-  cursor: "pointer",
-  transition: "all 0.15s ease",
-  letterSpacing: "-0.1px",
-  lineHeight: 1,
-  whiteSpace: "nowrap",
-}
+export const PLATFORM_LABELS: Array<{ slug: string; label: string }> = [
+  { slug: 'playstation5', label: 'PS5' },
+  { slug: 'xbox-series-x', label: 'XSX' },
+  { slug: 'pc', label: 'PC' },
+  { slug: 'nintendo-switch', label: 'NS' },
+  { slug: 'playstation4', label: 'PS4' },
+  { slug: 'xbox-one', label: 'XB1' },
+  { slug: 'ios', label: 'iOS' },
+  { slug: 'android', label: 'And' },
+  { slug: 'mac', label: 'Mac' },
+  { slug: 'linux', label: 'Lin' },
+]

@@ -1,5 +1,6 @@
 import { Rating, Tooltip } from '@mantine/core'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef } from 'react'
+import { useDebouncedCallback } from '@mantine/hooks'
 
 type Props = {
   value: number
@@ -11,22 +12,18 @@ type Props = {
 
 export default function StarRating({ value, onChange, size = 24, readonly = false, debounceMs = 800 }: Props) {
   const [tooltipValue, setTooltipValue] = useState(0)
-  const [localValue, setLocalValue] = useState(value)
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [draft, setDraft] = useState<number | null>(null)
   const isDragging = useRef(false)
+  const localValue = draft ?? value
 
-  useEffect(() => {
-    setLocalValue(value)
-  }, [value])
-
-  useEffect(() => {
-    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
-  }, [])
+  const fire = useDebouncedCallback((v: number) => {
+    onChange?.(v)
+    setDraft(null)
+  }, debounceMs)
 
   const commit = (v: number) => {
-    setLocalValue(v)
-    if (timerRef.current) clearTimeout(timerRef.current)
-    timerRef.current = setTimeout(() => onChange?.(v), debounceMs)
+    setDraft(v)
+    fire(v)
   }
 
   return (

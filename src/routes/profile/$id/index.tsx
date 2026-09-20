@@ -1,441 +1,292 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState, useContext } from 'react'
-import { useSuspenseQuery, useQueryClient, useQuery } from '@tanstack/react-query'
-import { useMediaQuery } from '@mantine/hooks'
-import {
-  Box, Text, Title, Group, Stack, Avatar, Button, SimpleGrid,
-  Container, Anchor, TextInput, Modal,
-} from '@mantine/core'
-import { notifications } from '@mantine/notifications'
-import { profileQueryOptions, updateProfile } from '../../../features/profile/api/profile'
-import { listsQueryOptions, listDetailQueryOptions, createList } from '../../../features/lists/api/lists'
+import { createFileRoute } from '@tanstack/react-router'
+import { useContext } from 'react'
+import { Link } from '@tanstack/react-router'
+import { useForm } from '@mantine/form'
+import { useSuspenseQuery } from '@tanstack/react-query'
+import { useDisclosure, useHover } from '@mantine/hooks'
+import { Anchor, Avatar, Box, Button, Container, Group, Modal, Paper, SimpleGrid, Stack, Text, TextInput, Title, UnstyledButton } from '@mantine/core'
+import { profileQueryOptions } from '../../../features/profile/api/profile'
+import { listsQueryOptions } from '../../../features/lists/api/lists'
 import { AuthContext } from '../../../features/auth/providers/auth_provider'
-import type { List } from '../../../features/lists/api/schemas'
-import {
-  EditIcon, PlusIcon, ListIcon, HeartIcon, StarIcon,
-  GlobeIcon, ChevronIcon, BookmarkIcon,
-} from '../../../features/shared/icons'
-import PlayraLoader from '../../../features/shared/playra_loader'
+import { BookmarkIcon, EditIcon, ListIcon, PlusIcon } from '../../../features/shared/icons'
+import SectionHeading from '../../../features/shared/section_heading'
+import { avatarColor } from '../../../features/shared/avatar_color'
 import { AvatarSelector } from '../../../features/profile/components/avatar_selector'
+import useUpdateProfile from '../../../features/profile/hooks/useUpdateProfile'
+import PinnedCard from '../../../features/lists/components/pinned_card'
+import ListCover from '../../../features/lists/components/list_cover'
+import type { List } from '../../../features/lists/api/schemas'
+import useCreateList from '../../../features/lists/hooks/useCreateList'
 
 export const Route = createFileRoute('/profile/$id/')({
   component: RouteComponent,
   loader: ({ context: { queryClient }, params }) =>
     Promise.all([
       queryClient.ensureQueryData(profileQueryOptions(params.id)),
-      queryClient.ensureQueryData(listsQueryOptions()),
+      queryClient.ensureQueryData(listsQueryOptions(params.id)),
     ]),
-  pendingComponent: () => <PlayraLoader />,
 })
 
-const LIST_ACCENT: Record<string, string> = {
-  ratings: '#F0C36B',
-  wishlist: '#F498C8',
-}
-
-function ListTypeGraphic({ type, size }: { type: string; size: number }) {
-  if (type === 'ratings') return <StarIcon size={size} fill />
-  if (type === 'wishlist') return <HeartIcon size={size} fill />
-  return <ListIcon size={size} />
-}
-
-function avatarColor(str: string) {
-  let h = 0
-  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) % 360
-  return `radial-gradient(circle at 30% 25%, hsl(${h} 80% 68%), hsl(${(h + 40) % 360} 70% 42%))`
-}
-
 function RouteComponent() {
-  const params = Route.useParams()
-  const qc = useQueryClient()
-  const navigate = useNavigate()
+  const { id } = Route.useParams()
   const { profile: currentUser } = useContext(AuthContext)
-  const isOwn = currentUser?.id === params.id
+  const isOwn = currentUser?.id === id
 
-  const { data: profile } = useSuspenseQuery(profileQueryOptions(params.id))
-  const { data: lists } = useSuspenseQuery(listsQueryOptions())
+  const { data: profile } = useSuspenseQuery(profileQueryOptions(id))
+  const { data: lists } = useSuspenseQuery(listsQueryOptions(id))
 
-  const isMobile = useMediaQuery('(max-width: 48em)')
-  const [editOpen, setEditOpen] = useState(false)
-  const [newListOpen, setNewListOpen] = useState(false)
+  const [editOpen, { open: openEdit, close: closeEdit }] = useDisclosure(false)
+  const [newListOpen, { open: openNewList, close: closeNewList }] = useDisclosure(false)
+  const updateProfile = useUpdateProfile(id)
+  const { createList, isLoading: creatingList } = useCreateList()
 
-  const goToList = (listId: string) =>
-    navigate({ to: '/profile/$id/lists/$listId', params: { id: params.id, listId } })
+  const displayName = profile.username ?? profile.email
+  const pinned = lists.filter((l) => l.type === 'wishlist' || l.type === 'ratings')
+  const custom = lists.filter((l) => l.type === 'custom')
 
   return (
     <Container size={1440} px={{ base: 'md', sm: 'xl' }} pb="xl" pt="xl">
-      <Group align="center" gap="xl" wrap="wrap" pb="xl" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }} mb="md">
-        <HoverableAvatar
+      <Group align="center" gap="xl" wrap="wrap" pb="xl" mb="md" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <EditableAvatar
           src={profile.avatar_url ?? undefined}
-          alt={profile.username ?? profile.email}
-          fallbackChar={((profile.username ?? profile.email)[0] ?? '?').toUpperCase()}
-          bg={!profile.avatar_url ? avatarColor(profile.username ?? profile.email) : undefined}
+          alt={displayName}
+          fallbackChar={(displayName[0] ?? '?').toUpperCase()}
+          bg={!profile.avatar_url ? avatarColor(displayName) : undefined}
           editable={isOwn}
-          onEdit={() => setEditOpen(true)}
-          size={isMobile ? 72 : 96}
+          onEdit={openEdit}
+          size={96}
         />
-        <Stack gap={4} style={{ flex: 1 }}>
-          <Title order={1} fz={{ base: 22, sm: 32 }} style={{ letterSpacing: -1 }}>{profile.username ?? profile.email}</Title>
+        <Stack gap={4} flex={1}>
+          <Title order={1} fz={{ base: 22, sm: 32 }} style={{ letterSpacing: -1 }}>{displayName}</Title>
           <Group gap="md" align="center">
             {profile.username && <Text fz="sm" c="dark.2" ff="monospace">@{profile.username}</Text>}
             <Text fz="sm" c="dark.3" ff="monospace">{profile.email}</Text>
           </Group>
-          <Group gap="xl" mt="xs">
-            <Text fz="sm" c="dark.2"><strong style={{ color: 'var(--mantine-color-dark-0)', fontFamily: 'var(--mantine-font-family-monospace)' }}>{lists.length}</strong> lists</Text>
-          </Group>
+          <Text fz="sm" c="dark.2" mt="xs">
+            <Text span fw={700} c="dark.0" ff="monospace">{lists.length}</Text> lists
+          </Text>
         </Stack>
         {isOwn && (
-          <Button variant="outline" color="gray" leftSection={<EditIcon size={16} />} onClick={() => setEditOpen(true)}>
+          <Button variant="outline" color="gray" leftSection={<EditIcon size={16} />} onClick={openEdit}>
             Edit profile
           </Button>
         )}
       </Group>
 
-      {(() => {
-        const pinned = lists.filter((l) => l.type === 'wishlist' || l.type === 'ratings')
-        if (pinned.length === 0) return null
-        return (
-          <Box mb={44}>
-            <Group justify="space-between" align="flex-end" mb="lg">
-              <Group gap={10}>
-                <Box style={{ color: 'var(--mantine-color-violet-4)', display: 'grid' }}><BookmarkIcon size={19} /></Box>
-                <Title order={2} style={{ letterSpacing: -0.6 }}>Quick lists</Title>
-              </Group>
-              <Text fz={11} tt="uppercase" fw={600} c="dark.3" ff="monospace" style={{ letterSpacing: '0.09em' }}>Always pinned</Text>
-            </Group>
-            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-              {pinned.map((l) => <PinnedCard key={l.id} list={l} onOpen={() => goToList(l.id)} />)}
-            </SimpleGrid>
-          </Box>
-        )
-      })()}
+      {pinned.length > 0 && (
+        <Box mb={44}>
+          <SectionHeading
+            icon={<BookmarkIcon size={19} />}
+            right={<Text fz={11} tt="uppercase" fw={600} c="dark.3" ff="monospace" style={{ letterSpacing: '0.09em' }}>Always pinned</Text>}
+          >
+            Quick lists
+          </SectionHeading>
+          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+            {pinned.map((l) => <PinnedCard key={l.id} list={l} profileId={id} />)}
+          </SimpleGrid>
+        </Box>
+      )}
 
-      {(() => {
-        const custom = lists.filter((l) => l.type === 'custom')
-        return (
-          <Box mb={60}>
-            <Group justify="space-between" align="center" mb="lg">
-              <Group gap={10}>
-                <Box style={{ color: 'var(--mantine-color-violet-4)', display: 'grid' }}><ListIcon size={19} /></Box>
-                <Title order={2} style={{ letterSpacing: -0.6 }}>Your lists</Title>
-              </Group>
-              {isOwn && (
-                <Anchor component="button" c="dark.2" fz="sm" onClick={() => setNewListOpen(true)}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                  New list <PlusIcon size={14} />
-                </Anchor>
-              )}
-            </Group>
-            <SimpleGrid cols={{ base: 1, xs: 2, sm: 3, md: 4 }} spacing="md">
-              {custom.map((l) => (
-                <ListCard key={l.id} list={l} onOpen={() => goToList(l.id)} />
-              ))}
-              {isOwn && (
-                <Box
-                  style={{
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                    gap: 10, minHeight: 184, border: '1.5px dashed rgba(255,255,255,0.14)',
-                    borderRadius: 'var(--mantine-radius-md)', cursor: 'pointer',
-                    color: 'var(--mantine-color-dark-2)', fontSize: 14, fontWeight: 500,
-                    transition: 'color 0.15s, border-color 0.15s',
-                  }}
-                  onClick={() => setNewListOpen(true)}
-                >
-                  <PlusIcon size={26} />
-                  <span>Create a list</span>
-                </Box>
-              )}
-            </SimpleGrid>
-          </Box>
-        )
-      })()}
+      <Box mb={60}>
+        <SectionHeading
+          icon={<ListIcon size={19} />}
+          right={isOwn && (
+            <Anchor component="button" c="dark.2" fz="sm" onClick={openNewList}>
+              <Group gap={5} component="span">New list <PlusIcon size={14} /></Group>
+            </Anchor>
+          )}
+        >
+          {isOwn ? 'Your lists' : 'Lists'}
+        </SectionHeading>
+        <SimpleGrid cols={{ base: 1, xs: 2, sm: 3, md: 4 }} spacing="md">
+          {custom.map((l) => <ListCard key={l.id} list={l} profileId={id} />)}
+          {isOwn && (
+            <NewListTile onClick={openNewList} />
+          )}
+        </SimpleGrid>
+        {custom.length === 0 && !isOwn && <Text c="dark.2" fz="sm">No public lists yet.</Text>}
+      </Box>
 
       {editOpen && (
         <EditProfileModal
           profile={profile}
-          onClose={() => setEditOpen(false)}
-          onSave={async (values) => {
-            await updateProfile(params.id, values)
-            qc.invalidateQueries(profileQueryOptions(params.id))
-            notifications.show({ title: 'Profile updated', message: 'Your changes have been saved', color: 'green' })
-            setEditOpen(false)
-          }}
+          saving={updateProfile.isPending}
+          onClose={closeEdit}
+          onSave={(values) => updateProfile.mutate(values, { onSuccess: closeEdit })}
         />
       )}
 
-      <Modal opened={newListOpen} onClose={() => setNewListOpen(false)} title="New list" size="sm">
+      <Modal opened={newListOpen} onClose={closeNewList} title="New list" size="sm">
         <NewListForm
-          onClose={() => setNewListOpen(false)}
-          onCreate={async (name) => {
-            await createList({ name, description: null, is_public: false })
-            qc.invalidateQueries(listsQueryOptions())
-            notifications.show({ title: 'List created', message: `"${name}" is ready`, color: 'green' })
-            setNewListOpen(false)
-          }}
+          saving={creatingList}
+          onClose={closeNewList}
+          onCreate={(name) => createList({ name, description: null, is_public: false }).then(closeNewList).catch(() => {})}
         />
       </Modal>
     </Container>
   )
 }
 
-function HoverableAvatar({
-  src, alt, fallbackChar, bg, editable, onEdit, size = 96,
-}: {
-  src?: string; alt: string; fallbackChar: string
-  bg?: string; editable: boolean; onEdit: () => void; size?: number
+function EditableAvatar({ src, alt, fallbackChar, bg, editable, onEdit, size }: {
+  src?: string; alt: string; fallbackChar: string; bg?: string; editable: boolean; onEdit: () => void; size: number
 }) {
-  const [hovered, setHovered] = useState(false)
+  const { hovered, ref } = useHover<HTMLDivElement>()
+  const avatar = (
+    <Avatar src={src} alt={alt} size={size} radius="xl" color="violet" style={{ transform: 'translateZ(0)', ...(bg ? { background: bg } : {}) }}>
+      {!src && fallbackChar}
+    </Avatar>
+  )
+  if (!editable) return avatar
+
   return (
     <Box
-      style={{ position: 'relative', cursor: editable ? 'pointer' : 'default', flexShrink: 0 }}
-      onMouseEnter={() => editable && setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      onClick={() => editable && onEdit()}
+      ref={ref}
+      pos="relative"
+      role="button"
+      tabIndex={0}
+      aria-label="Edit profile"
+      style={{ cursor: 'pointer', flexShrink: 0 }}
+      onClick={onEdit}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit() } }}
     >
-      <Avatar
-        src={src}
-        alt={alt}
-        size={size}
-        radius="xl"
-        style={{ transform: 'translateZ(0)', ...(bg ? { background: bg } : {}) }}
-        color="violet"
+      {avatar}
+      <Box
+        pos="absolute"
+        inset={0}
+        bdrs="xl"
+        c="white"
+        bg="rgba(0,0,0,0.55)"
+        display="flex"
+        opacity={hovered ? 1 : 0}
+        style={{ alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(2px)', transition: 'opacity 0.15s' }}
       >
-        {!src && fallbackChar}
-      </Avatar>
-      {editable && hovered && (
-        <Box style={{
-          position: 'absolute', inset: 0, borderRadius: 'var(--mantine-radius-xl)',
-          background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(2px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          transition: 'opacity 0.15s',
-        }}>
-          <EditIcon size={22} style={{ color: 'white' }} />
-        </Box>
-      )}
-    </Box>
-  )
-}
-
-const PINNED_META: Record<string, { Icon: React.ComponentType<{ size?: number; fill?: boolean; style?: React.CSSProperties }>, fill?: boolean, accent: string, blurb: string }> = {
-  wishlist: { Icon: HeartIcon, fill: false, accent: '#F498C8', blurb: "Games you're itching to play" },
-  ratings:  { Icon: StarIcon,  fill: true,  accent: '#F0C36B', blurb: "Games you've scored & rated" },
-}
-
-function PinnedCard({ list, onOpen }: { list: List; onOpen: () => void }) {
-  const [hovered, setHovered] = useState(false)
-  const meta = PINNED_META[list.type] ?? { Icon: ListIcon, fill: false, accent: '#B098FF', blurb: '' }
-  const { Icon, fill, accent } = meta
-  const { data: detail } = useQuery({ ...listDetailQueryOptions(list.id), staleTime: 60_000 })
-  const n = detail?.games.length ?? list.game_count ?? null
-
-  return (
-    <Box
-      onClick={onOpen}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        position: 'relative', overflow: 'hidden', cursor: 'pointer',
-        borderRadius: 20, minHeight: 188, padding: '24px 26px',
-        display: 'flex',
-        background: 'var(--mantine-color-dark-6)',
-        boxShadow: hovered
-          ? `0 24px 52px -24px rgba(0,0,0,.75), inset 0 0 0 1px color-mix(in oklab, ${accent} 55%, transparent)`
-          : 'inset 0 0 0 1px rgba(255,255,255,0.12)',
-        transform: hovered ? 'translateY(-3px)' : 'none',
-        transition: 'transform 0.16s, box-shadow 0.16s',
-      }}
-    >
-      <Box style={{
-        position: 'absolute', inset: 0, pointerEvents: 'none',
-        background: `linear-gradient(120deg, color-mix(in oklab, ${accent} 26%, transparent) 0%, transparent 58%), linear-gradient(160deg, var(--mantine-color-dark-6) 10%, var(--mantine-color-dark-8) 130%)`,
-      }} />
-      <Box style={{
-        position: 'absolute', inset: 0, opacity: 0.5, pointerEvents: 'none',
-        backgroundImage: `radial-gradient(color-mix(in oklab, ${accent} 30%, transparent) 1px, transparent 1.4px)`,
-        backgroundSize: '22px 22px',
-        WebkitMaskImage: 'linear-gradient(115deg, #000 0%, transparent 52%)',
-        maskImage: 'linear-gradient(115deg, #000 0%, transparent 52%)',
-      }} />
-      <Box style={{
-        position: 'absolute', width: 320, height: 320, right: -36, top: -126,
-        borderRadius: '50%', pointerEvents: 'none',
-        background: `radial-gradient(circle, color-mix(in oklab, ${accent} 52%, transparent) 0%, transparent 66%)`,
-        filter: 'blur(4px)',
-      }} />
-      <Box style={{
-        position: 'absolute', right: -26, bottom: -52, lineHeight: 0, pointerEvents: 'none',
-        color: accent, opacity: 0.2,
-        filter: `drop-shadow(0 8px 24px color-mix(in oklab, ${accent} 50%, transparent))`,
-      }}>
-        <Icon size={224} fill={fill} />
-      </Box>
-
-      <Box style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flex: 1 }}>
-        <Box>
-          <Box style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 700, letterSpacing: 0.3, color: accent, marginBottom: 9 }}>
-            <Icon size={14} fill={fill} /> {list.name}
-          </Box>
-          <Text fw={700} fz={18} style={{ letterSpacing: -0.4, lineHeight: 1.25, maxWidth: '17ch', textWrap: 'balance' as React.CSSProperties['textWrap'] }}>
-            {meta.blurb}
-          </Text>
-        </Box>
-        <Group align="center" gap={8} mt="md">
-          <Text fz={13} c="dark.2">
-            <strong style={{ fontFamily: 'var(--mantine-font-family-monospace)', fontWeight: 700, color: 'var(--mantine-color-dark-0)', fontSize: 17 }}>
-              {n ?? '—'}
-            </strong>{' '}
-            {n === 1 ? 'game' : 'games'}
-          </Text>
-          <Box style={{
-            marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 3,
-            fontSize: 12.5, fontWeight: 600, color: accent,
-            opacity: hovered ? 1 : 0, transform: hovered ? 'translateX(0)' : 'translateX(-4px)',
-            transition: 'opacity 0.16s, transform 0.16s',
-          }}>
-            Open <ChevronIcon size={13} />
-          </Box>
-        </Group>
+        <EditIcon size={22} />
       </Box>
     </Box>
   )
 }
 
-function ListCard({ list, onOpen }: { list: List; onOpen: () => void }) {
-  const [hovered, setHovered] = useState(false)
+function ListCard({ list, profileId }: { list: List; profileId: string }) {
+  const { hovered, ref } = useHover<HTMLAnchorElement>()
   const n = list.game_count ?? null
+
   return (
-    <Box
+    <Link
+      ref={ref}
+      to="/profile/$id/lists/$listId"
+      params={{ id: profileId, listId: list.id }}
       style={{
-        background: 'var(--mantine-color-dark-6)', borderRadius: 14,
-        overflow: 'hidden', cursor: 'pointer',
+        display: 'block',
+        overflow: 'hidden',
+        borderRadius: 14,
+        background: 'var(--mantine-color-dark-6)',
+        textDecoration: 'none',
+        color: 'inherit',
+        transition: 'transform 0.14s, box-shadow 0.14s',
+        transform: hovered ? 'translateY(-3px)' : 'none',
         boxShadow: hovered
           ? '0 16px 36px -18px rgba(0,0,0,.6), inset 0 0 0 1px rgba(255,255,255,0.14)'
           : 'inset 0 0 0 1px rgba(255,255,255,0.08)',
-        transform: hovered ? 'translateY(-3px)' : 'none',
-        transition: 'transform 0.14s, box-shadow 0.14s',
       }}
-      onClick={onOpen}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
     >
-      {(() => {
-        const accent = LIST_ACCENT[list.type]
-        return (
-          <Box style={{ position: 'relative', height: 132, overflow: 'hidden' }}>
-            {list.cover_url ? (
-              <Box style={{ position: 'absolute', inset: 0, backgroundImage: `url('${list.cover_url}')`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
-            ) : (
-              <>
-                <Box style={{ position: 'absolute', inset: 0, background: accent ? `linear-gradient(120deg, color-mix(in oklab, ${accent} 22%, transparent) 0%, transparent 60%), linear-gradient(160deg, var(--mantine-color-dark-6) 10%, var(--mantine-color-dark-8) 130%)` : 'linear-gradient(135deg, color-mix(in oklab, var(--mantine-color-violet-8) 30%, var(--mantine-color-dark-7)) 0%, var(--mantine-color-dark-7) 100%)' }} />
-                {accent && <Box style={{ position: 'absolute', inset: 0, opacity: 0.35, backgroundImage: `radial-gradient(color-mix(in oklab, ${accent} 35%, transparent) 1px, transparent 1.4px)`, backgroundSize: '18px 18px', WebkitMaskImage: 'linear-gradient(115deg, #000 0%, transparent 55%)', maskImage: 'linear-gradient(115deg, #000 0%, transparent 55%)' }} />}
-                <Box style={{ position: 'absolute', right: -10, top: '50%', transform: 'translateY(-50%)', opacity: 0.18, color: accent ?? 'var(--mantine-color-violet-4)' }}>
-                  <ListTypeGraphic type={list.type} size={90} />
-                </Box>
-              </>
-            )}
-            {list.is_public && (
-              <Box style={{
-                position: 'absolute', top: 10, right: 10, zIndex: 2,
-                display: 'inline-flex', alignItems: 'center', gap: 5,
-                background: 'color-mix(in oklab, var(--mantine-color-dark-8) 66%, transparent)',
-                backdropFilter: 'blur(6px)',
-                color: '#7CC8E3', fontSize: 10.5, fontWeight: 600, letterSpacing: 0.3,
-                padding: '4px 9px', borderRadius: 999,
-                boxShadow: 'inset 0 0 0 1px color-mix(in oklab, #7CC8E3 36%, transparent)',
-              }}>
-                <GlobeIcon size={12} /> Public
-              </Box>
-            )}
-          </Box>
-        )
-      })()}
-      <Box style={{ padding: '13px 14px' }}>
+      <ListCover list={list} />
+      <Box px={14} py={13}>
         <Text fw={600} fz={15} style={{ letterSpacing: -0.2 }}>{list.name}</Text>
-        <Text fz={11.5} c="dark.3" mt={3} ff="monospace">
-          {n !== null ? `${n} ${n === 1 ? 'game' : 'games'}` : '—'}
-        </Text>
+        <Text fz={11.5} c="dark.3" mt={3} ff="monospace">{n !== null ? `${n} ${n === 1 ? 'game' : 'games'}` : '—'}</Text>
       </Box>
-    </Box>
+    </Link>
   )
 }
 
-function EditProfileModal({
-  profile, onClose, onSave,
-}: {
-  profile: { username: string | null; email: string; avatar_url: string | null }
-  onClose: () => void
-  onSave: (values: { username: string; avatar_url: string | null }) => Promise<void>
-}) {
-  const [username, setUsername] = useState(profile.username ?? '')
-  const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url ?? '')
-  const [saving, setSaving] = useState(false)
+function NewListTile({ onClick }: { onClick: () => void }) {
+  const { hovered, ref } = useHover<HTMLButtonElement>()
+  return (
+    <UnstyledButton
+      ref={ref}
+      onClick={onClick}
+      mih={184}
+      bdrs="md"
+      fz={14}
+      fw={500}
+      c={hovered ? 'dark.0' : 'dark.2'}
+      display="flex"
+      style={{
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+        border: `1.5px dashed ${hovered ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.14)'}`,
+        transition: 'color 0.15s, border-color 0.15s',
+      }}
+    >
+      <PlusIcon size={26} />
+      Create a list
+    </UnstyledButton>
+  )
+}
 
-  const save = async () => {
-    setSaving(true)
-    await onSave({ username: username.trim() || profile.email, avatar_url: avatarUrl.trim() || null })
-    setSaving(false)
-  }
+function NewListForm({ saving, onClose, onCreate }: { saving: boolean; onClose: () => void; onCreate: (name: string) => void }) {
+  const form = useForm({
+    initialValues: { name: '' },
+    validate: { name: (v) => (v.trim() ? null : 'Name is required') },
+  })
 
   return (
-    <Modal
-      opened
-      onClose={onClose}
-      title="Edit profile"
-      size={520}
-      styles={{ title: { fontSize: 22, fontWeight: 700, letterSpacing: -0.5 } }}
-    >
-      <Stack gap="md">
-        <Box
-          style={{
-            background: 'var(--mantine-color-dark-6)',
-            borderRadius: 'var(--mantine-radius-md)',
-            boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)',
-            padding: '14px 16px',
-          }}
-        >
-          <Text fz="xs" tt="uppercase" fw={700} c="dark.1" ff="monospace" mb={10} style={{ letterSpacing: '0.09em' }}>
-            Display name
-          </Text>
-          <TextInput
-            placeholder={profile.email}
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            styles={{ input: { background: 'var(--mantine-color-dark-7)', border: '1px solid rgba(255,255,255,0.10)' } }}
-          />
-        </Box>
-        <AvatarSelector initialUrl={profile.avatar_url} onChange={setAvatarUrl} />
+    <form onSubmit={form.onSubmit(({ name }) => onCreate(name.trim()))}>
+      <Stack gap="sm">
+        <Text fz="sm" c="dark.2">Give your list a name. You can add games after.</Text>
+        <TextInput placeholder="e.g. Comfort games, 2026 backlog…" data-autofocus {...form.getInputProps('name')} />
         <Group gap="xs" mt="xs">
-          <Button variant="default" style={{ flex: 1 }} onClick={onClose}>Cancel</Button>
-          <Button style={{ flex: 1 }} loading={saving} onClick={save}>Save changes</Button>
+          <Button variant="default" flex={1} onClick={onClose}>Cancel</Button>
+          <Button type="submit" flex={1} loading={saving}>Create list</Button>
         </Group>
       </Stack>
-    </Modal>
+    </form>
   )
 }
 
-function NewListForm({ onClose, onCreate }: { onClose: () => void; onCreate: (name: string) => Promise<void> }) {
-  const [name, setName] = useState('')
-  const [saving, setSaving] = useState(false)
-  const create = async () => {
-    if (!name.trim()) return
-    setSaving(true)
-    await onCreate(name.trim())
-    setSaving(false)
-  }
+type Props = {
+  profile: { username: string | null; email: string; avatar_url: string | null }
+  saving: boolean
+  onClose: () => void
+  onSave: (values: { username: string; avatar_url: string | null }) => void
+}
+
+function EditProfileModal({ profile, saving, onClose, onSave }: Props) {
+  const form = useForm({
+    initialValues: { username: profile.username ?? '', avatar_url: profile.avatar_url ?? '' },
+    validate: {
+      username: (v) => (v.trim().length > 30 ? 'Max 30 characters' : null),
+    },
+  })
+
+  const submit = form.onSubmit((values) =>
+    onSave({ username: values.username.trim() || profile.email, avatar_url: values.avatar_url.trim() || null }),
+  )
+
   return (
-    <Stack gap="sm">
-      <Text fz="sm" c="dark.2">Give your list a name. You can add games after.</Text>
-      <TextInput
-        placeholder="e.g. Comfort games, 2026 backlog…"
-        value={name}
-        autoFocus
-        onChange={(e) => setName(e.target.value)}
-        onKeyDown={(e) => e.key === 'Enter' && create()}
-      />
-      <Group gap="xs" mt="xs">
-        <Button variant="default" style={{ flex: 1 }} onClick={onClose}>Cancel</Button>
-        <Button style={{ flex: 1 }} disabled={!name.trim()} loading={saving} onClick={create}>Create list</Button>
-      </Group>
-    </Stack>
+    <Modal opened onClose={onClose} title="Edit profile" size={520} styles={{ title: { fontSize: 22, fontWeight: 700, letterSpacing: -0.5 } }}>
+      <form onSubmit={submit}>
+        <Stack gap="md">
+          <Paper bg="dark.6" bdrs="md" px={16} py={14} style={{ boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)' }}>
+            <Text fz="xs" tt="uppercase" fw={700} c="dark.1" ff="monospace" mb={10} style={{ letterSpacing: '0.09em' }}>
+              Display name
+            </Text>
+            <TextInput
+              placeholder={profile.email}
+              styles={{ input: { background: 'var(--mantine-color-dark-7)', border: '1px solid rgba(255,255,255,0.10)' } }}
+              {...form.getInputProps('username')}
+            />
+          </Paper>
+          <Box>
+            <AvatarSelector initialUrl={profile.avatar_url} onChange={(url) => form.setFieldValue('avatar_url', url)} />
+          </Box>
+          <Group gap="xs" mt="xs">
+            <Button variant="default" flex={1} onClick={onClose}>Cancel</Button>
+            <Button type="submit" flex={1} loading={saving}>Save changes</Button>
+          </Group>
+        </Stack>
+      </form>
+    </Modal>
   )
 }

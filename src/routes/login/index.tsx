@@ -1,14 +1,18 @@
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import { z } from 'zod'
 import { useState } from 'react'
-import { Box, Title, Text, TextInput, PasswordInput, Button, Anchor, Paper, Center, Stack, Alert } from '@mantine/core'
+import { TextInput, PasswordInput, Button, Anchor, Stack, Alert } from '@mantine/core'
+import { useForm } from '@mantine/form'
 import useLogin from '../../features/auth/hooks/useLogin'
-import Logo from '../../features/shared/logo'
+import AuthShell from '../../features/auth/components/auth_shell'
 
 export const Route = createFileRoute('/login/')({
   component: RouteComponent,
   validateSearch: z.object({ redirect: z.string().optional() }).parse,
 })
+
+// only allow same-origin relative paths (blocks //evil.com and https://...)
+const safeRedirect = (to?: string) => (to && /^\/(?![/\\])/.test(to) ? to : '/')
 
 function RouteComponent() {
   const { mutateAsync: login, isPending } = useLogin()
@@ -16,43 +20,38 @@ function RouteComponent() {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
+  const form = useForm({
+    initialValues: { email: '', password: '' },
+    validate: {
+      email: (v) => (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? null : 'Enter a valid email'),
+      password: (v) => (v ? null : 'Password is required'),
+    },
+  })
+
+  const handleSubmit = async (values: typeof form.values) => {
     setError(null)
-    const form = new FormData(e.currentTarget)
     try {
-      await login({ email: form.get('email') as string, password: form.get('password') as string })
-      router.history.push(redirectTo ?? '/')
+      await login(values)
+      router.history.push(safeRedirect(redirectTo))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed. Please try again.')
     }
   }
 
   return (
-    <Center style={{ minHeight: '80vh' }} p="xl">
-      <Stack align="center" gap="xl" w="100%" maw={420}>
-        <Stack align="center" gap={10}>
-          <Logo size={52} />
-          <Text fw={700} fz={26} style={{ letterSpacing: -0.8 }} c="dark.0">playra</Text>
+    <AuthShell
+      title="Welcome back"
+      subtitle="Log in to your Playra account."
+      footer={<>No account? <Anchor component={Link} to="/signup" c="violet">Sign up</Anchor></>}
+    >
+      <form onSubmit={form.onSubmit(handleSubmit)}>
+        <Stack gap={14}>
+          <TextInput label="Email" type="email" placeholder="you@example.com" radius="md" {...form.getInputProps('email')} />
+          <PasswordInput label="Password" placeholder="••••••••" radius="md" {...form.getInputProps('password')} />
+          {error && <Alert color="red" radius="md" fz="sm">{error}</Alert>}
+          <Button type="submit" fullWidth mt={6} loading={isPending}>Log in</Button>
         </Stack>
-
-        <Paper w="100%" p="xl" radius="lg" style={{ boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)' }}>
-          <Title order={2} mb={6} style={{ fontWeight: 800, letterSpacing: -0.6 }}>Welcome back</Title>
-          <Text fz="sm" c="dark.2" mb="xl">Log in to your Playra account.</Text>
-          <form onSubmit={handleSubmit}>
-            <Box style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <TextInput label="Email" type="email" name="email" placeholder="you@example.com" required radius="md" />
-              <PasswordInput label="Password" name="password" placeholder="••••••••" required radius="md" />
-              {error && <Alert color="red" radius="md" fz="sm">{error}</Alert>}
-              <Button type="submit" fullWidth mt={6} loading={isPending}>Log in</Button>
-            </Box>
-          </form>
-          <Text ta="center" fz="sm" c="dark.2" mt="lg">
-            No account?{' '}
-            <Anchor component={Link} to="/signup" c="violet">Sign up</Anchor>
-          </Text>
-        </Paper>
-      </Stack>
-    </Center>
+      </form>
+    </AuthShell>
   )
 }

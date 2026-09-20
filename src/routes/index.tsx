@@ -1,14 +1,17 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { Box, Group, Text, Title, SimpleGrid, Button, Stack, Anchor, Container } from '@mantine/core'
-import { useMediaQuery } from '@mantine/hooks'
+import { Anchor, Box, Container, Group, ScrollArea, SimpleGrid, Stack, Text } from '@mantine/core'
+import { useHover } from '@mantine/hooks'
 import routeProtector from '../lib/route_protector'
 import { gamesQueryOptions, popularGamesQueryOptions, recentGamesQueryOptions } from '../features/games/api/games'
-import type { Game } from '../features/games/api/schemas'
 import GameCard from '../features/games/components/game_card'
+import FeaturedHero from '../features/games/components/featured_hero'
 import MetacriticBadge from '../features/shared/metacritic_badge'
-import { PlayIcon, HeartIcon, FireIcon, SparkleIcon, StarIcon, ChevronIcon, GamepadIcon } from '../features/shared/icons'
-import PlayraLoader from '../features/shared/playra_loader'
+import type { Game } from '../features/games/api/schemas'
+import { toGameCardProps } from '../features/games/utils/game_card_props'
+import { useUserLibrary } from '../features/games/hooks/useUserLibrary'
+import { FireIcon, SparkleIcon, StarIcon, ChevronIcon, GamepadIcon } from '../features/shared/icons'
+import SectionHeading from '../features/shared/section_heading'
 
 const TOP = { page: 1, page_size: 8, ordering: '-metacritic' as const }
 
@@ -22,170 +25,119 @@ export const Route = createFileRoute('/')({
       queryClient.ensureQueryData(gamesQueryOptions(TOP)),
     ])
   },
-  pendingComponent: () => <PlayraLoader />
 })
 
-function SectionHead({ title, icon, onSee }: { title: string; icon: React.ReactNode; onSee?: () => void }) {
+function BrowseAll({ onClick }: { onClick: () => void }) {
   return (
-    <Group justify="space-between" mb="md" align="flex-end">
-      <Group gap={11}>
-        <Box style={{ color: 'var(--mantine-color-violet-4)', display: 'grid' }}>{icon}</Box>
-        <Title order={2} style={{ letterSpacing: -0.6 }}>{title}</Title>
-      </Group>
-      {onSee && (
-        <Anchor component="button" c="dark.2" fz="sm" onClick={onSee}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-          Browse all <ChevronIcon size={14} />
-        </Anchor>
-      )}
-    </Group>
+    <Anchor component="button" c="dark.2" fz="sm" onClick={onClick}>
+      <Group gap={5} component="span">Browse all <ChevronIcon size={14} /></Group>
+    </Anchor>
   )
 }
 
 function RouteComponent() {
   const navigate = useNavigate()
-  const isMobile = useMediaQuery('(max-width: 48em)')
   const { data: popularData } = useSuspenseQuery(popularGamesQueryOptions(10))
   const { data: recentData } = useSuspenseQuery(recentGamesQueryOptions(8))
   const { data: topData } = useSuspenseQuery(gamesQueryOptions(TOP))
+  const { wishlistedIds, userRatings } = useUserLibrary()
 
   const popular = popularData.results
   const fresh = recentData.results
-  const topRated = topData.results.filter((g) => g.metacritic != null)
-  const featured: Game | undefined = fresh[0]
+  const topRated = topData.results.filter((g) => g.metacritic != null).slice(0, 8)
+  const featured = fresh[0]
 
-  const goGames = () => navigate({ to: '/games', search: { page: 1, page_size: 20 } })
+  const browse = <BrowseAll onClick={() => navigate({ to: '/games', search: { page: 1, page_size: 20 } })} />
 
   return (
-    <Container size={1440} px="xl" pb="xl">
-      {/* HERO */}
-      {featured && (
-        <Box
-          mt="xl"
-          mih={{ base: 240, sm: 380 }}
-          className="hero-container"
-          style={{
-            position: 'relative', borderRadius: 'var(--mantine-radius-xl)', overflow: 'hidden',
-            display: 'flex', alignItems: 'flex-end', cursor: 'pointer',
-            boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)',
-          }}
-          onClick={() => navigate({ to: '/games/$id', params: { id: String(featured.id) } })}
-        >
-          <div
-            className="hero-bg-img"
-            style={
-              featured.background_image
-                ? { backgroundImage: `url(${featured.background_image})` }
-                : { background: 'var(--mantine-color-dark-5)' }
-            }
-          />
-          <Box style={{ position: 'absolute', inset: 0, background: 'linear-gradient(105deg, rgba(10,15,31,.94) 12%, rgba(10,15,31,.55) 48%, transparent 80%)' }} />
-          <Box p={{ base: 'xl', sm: '44px 48px' }} style={{ position: 'relative', maxWidth: 600 }}>
-            <Box
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 5,
-                background: 'color-mix(in oklab, #7CC8E3 16%, transparent)', color: '#7CC8E3',
-                borderRadius: 999, padding: '5px 11px', fontSize: 12, fontWeight: 500, marginBottom: 14,
-              }}
-            >
-              <SparkleIcon size={13} /> Featured
-            </Box>
-            <Title order={1} mb="sm" fz={{ base: 28, sm: 46 }} style={{ lineHeight: 1.02, letterSpacing: -1.6, textWrap: 'balance' }}>
-              {featured.name}
-            </Title>
-            <Group gap="sm" mb="md" align="center">
-              <MetacriticBadge score={featured.metacritic} />
-              <Text c="dark.2">·</Text>
-              <Text c="dark.2" fz="sm">{featured.genres.map((g) => g.name).join(' · ')}</Text>
-            </Group>
-            <Group gap="xs">
-              <Button
-                leftSection={<PlayIcon size={16} />}
-                onClick={(e) => { e.stopPropagation(); navigate({ to: '/games/$id', params: { id: String(featured.id) } }) }}
-              >
-                View game
-              </Button>
-              <Button variant="outline" color="gray" leftSection={<HeartIcon size={16} />} onClick={(e) => e.stopPropagation()}>
-                Wishlist
-              </Button>
-            </Group>
-          </Box>
-        </Box>
-      )}
+    <Container size={1440} px="xl" pb={60}>
+      {featured && <FeaturedHero game={featured} />}
 
-      {/* POPULAR NOW */}
       <Box mt={44}>
-        <SectionHead title="Popular right now" icon={<FireIcon size={20} />} onSee={goGames} />
-        <div className="scroll-rail">
-          {popular.map((g) => (
-            <Box key={g.id} style={{ width: 200 }}>
-              <GameCard id={g.id} name={g.name} imageUrl={g.background_image} metacritic={g.metacritic} released={g.released} genres={g.genres.map((x) => x.name)} platforms={g.platforms.map((x) => x.platform.slug)} communityScore={g.playra_community_score} />
-            </Box>
-          ))}
-        </div>
+        <SectionHeading icon={<FireIcon size={20} />} right={browse}>Popular right now</SectionHeading>
+        <ScrollArea type="hover" scrollbarSize={4}>
+          <Group gap={18} wrap="nowrap" align="stretch" pb={8}>
+            {popular.map((g) => (
+              <Box key={g.id} w={200} style={{ flexShrink: 0 }}>
+                <GameCard {...toGameCardProps(g)} inWishlist={wishlistedIds.has(g.id)} userScore={userRatings.get(g.id) ?? null} />
+              </Box>
+            ))}
+          </Group>
+        </ScrollArea>
       </Box>
 
-      {/* NEW RELEASES */}
       <Box mt={44}>
-        <SectionHead title="New releases" icon={<SparkleIcon size={18} />} onSee={goGames} />
-        <SimpleGrid cols={{ base: 2, xs: 3, sm: 4, md: 4, lg: 5 }} spacing="md">
+        <SectionHeading icon={<SparkleIcon size={18} />} right={browse}>New releases</SectionHeading>
+        <SimpleGrid cols={{ base: 2, xs: 3, sm: 4, lg: 5 }} spacing="md">
           {fresh.map((g) => (
-            <GameCard key={g.id} id={g.id} name={g.name} imageUrl={g.background_image} metacritic={g.metacritic} released={g.released} genres={g.genres.map((x) => x.name)} platforms={g.platforms.map((x) => x.platform.slug)} communityScore={g.playra_community_score} />
+            <GameCard
+              key={g.id}
+              {...toGameCardProps(g)}
+              inWishlist={wishlistedIds.has(g.id)}
+              userScore={userRatings.get(g.id) ?? null}
+            />
           ))}
         </SimpleGrid>
       </Box>
 
-      {/* TOP RATED */}
       <Box mt={44}>
-        <SectionHead title="Top rated of all time" icon={<StarIcon size={17} fill />} onSee={goGames} />
+        <SectionHeading icon={<StarIcon size={17} fill />} right={browse}>Top rated of all time</SectionHeading>
         <Stack gap="xs">
-          {topRated.slice(0, 8).map((g, i) => (
-            <Box
-              key={g.id}
-              style={{
-                display: 'grid', gridTemplateColumns: isMobile ? '56px 1fr auto' : '42px 56px 1fr auto auto', gap: 16,
-                alignItems: 'center', padding: '10px 16px 10px 10px',
-                background: 'var(--mantine-color-dark-6)', borderRadius: 'var(--mantine-radius-md)',
-                cursor: 'pointer', transition: 'background 0.14s',
-                boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)',
-              }}
-              onClick={() => navigate({ to: '/games/$id', params: { id: String(g.id) } })}
-            >
-              <Text fw={600} fz={18} c="dark.2" ta="center" ff="monospace" visibleFrom="sm">
-                {String(i + 1).padStart(2, '0')}
-              </Text>
-              <Box
-                style={{
-                  width: 56, height: 56, borderRadius: 9,
-                  backgroundColor: 'var(--mantine-color-dark-5)',
-                  backgroundImage: g.background_image ? `url(${g.background_image})` : 'none',
-                  backgroundSize: 'cover', backgroundPosition: 'center',
-                  boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)',
-                  flexShrink: 0,
-                  display: 'grid', placeItems: 'center',
-                  color: 'var(--mantine-color-dark-3)',
-                }}
-              >
-                {!g.background_image && <GamepadIcon size={24} />}
-              </Box>
-              <Box>
-                <Text fw={600} fz={15} style={{ letterSpacing: -0.3 }}>{g.name}</Text>
-                <Text fz="xs" c="dark.2" mt={2}>{g.released?.slice(0, 4)}</Text>
-              </Box>
-              <Group gap={6} visibleFrom="sm">
-                {g.genres.slice(0, 2).map((x) => (
-                  <Box key={x.id} style={{ fontSize: 12, padding: '5px 11px', borderRadius: 999, background: 'var(--mantine-color-dark-5)', color: 'var(--mantine-color-dark-1)', fontWeight: 500 }}>
-                    {x.name}
-                  </Box>
-                ))}
-              </Group>
-              <MetacriticBadge score={g.metacritic} />
-            </Box>
-          ))}
+          {topRated.map((g, i) => <TopRatedRow key={g.id} game={g} rank={i + 1} />)}
         </Stack>
       </Box>
-
-      <Box h={60} />
     </Container>
+  )
+}
+
+function TopRatedRow({ game, rank }: { game: Game; rank: number }) {
+  const { hovered, ref } = useHover<HTMLAnchorElement>()
+
+  return (
+    <Link
+      ref={ref}
+      to="/games/$id"
+      params={{ id: String(game.id) }}
+      style={{
+        textDecoration: 'none',
+        color: 'inherit',
+        borderRadius: 'var(--mantine-radius-md)',
+        background: hovered ? 'var(--mantine-color-dark-5)' : 'var(--mantine-color-dark-6)',
+        boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)',
+        transition: 'background 0.14s',
+      }}
+    >
+      <Group gap={16} wrap="nowrap" py={10} pl={10} pr={16}>
+        <Text fw={600} fz={18} c="dark.2" ta="center" ff="monospace" w={42} visibleFrom="sm">{String(rank).padStart(2, '0')}</Text>
+        <Box
+          w={56}
+          h={56}
+          bdrs={9}
+          bg="dark.5"
+          c="dark.3"
+          display="grid"
+          style={{
+            flexShrink: 0,
+            placeItems: 'center',
+            backgroundImage: game.background_image ? `url("${game.background_image}")` : undefined,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)',
+          }}
+        >
+          {!game.background_image && <GamepadIcon size={24} />}
+        </Box>
+        <Box flex={1} miw={0}>
+          <Text fw={600} fz={15} truncate style={{ letterSpacing: -0.3 }}>{game.name}</Text>
+          <Text fz="xs" c="dark.2" mt={2}>{game.released?.slice(0, 4)}</Text>
+        </Box>
+        <Group gap={6} visibleFrom="sm" wrap="nowrap">
+          {game.genres.slice(0, 2).map((x) => (
+            <Box key={x.id} px={11} py={5} bdrs={999} bg="dark.5" c="dark.1" fz={12} fw={500}>{x.name}</Box>
+          ))}
+        </Group>
+        <MetacriticBadge score={game.metacritic} />
+      </Group>
+    </Link>
   )
 }

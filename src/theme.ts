@@ -36,6 +36,14 @@ const dark: MantineColorsTuple = [
   '#04060F',  // 9
 ]
 
+const inputStyles = {
+  input: {
+    background: 'var(--mantine-color-dark-7)',
+    borderColor: 'rgba(255,255,255,0.14)',
+    color: 'var(--mantine-color-dark-0)',
+  },
+}
+
 export const theme = createTheme({
   fontFamily: "'Sora', system-ui, sans-serif",
   fontFamilyMonospace: "'JetBrains Mono', ui-monospace, monospace",
@@ -150,21 +158,30 @@ export const theme = createTheme({
     },
     TextInput: {
       defaultProps: { radius: 'md' },
-      styles: {
-        input: {
-          background: 'var(--mantine-color-dark-7)',
-          borderColor: 'rgba(255,255,255,0.14)',
-          color: 'var(--mantine-color-dark-0)',
-        },
-      },
+      styles: inputStyles,
     },
     Textarea: {
       defaultProps: { radius: 'md' },
+      styles: inputStyles,
+    },
+    PasswordInput: {
+      defaultProps: { radius: 'md' },
+      styles: inputStyles,
+    },
+    Drawer: {
       styles: {
-        input: {
-          background: 'var(--mantine-color-dark-7)',
-          borderColor: 'rgba(255,255,255,0.14)',
-          color: 'var(--mantine-color-dark-0)',
+        content: { background: 'var(--mantine-color-dark-7)' },
+        header: { background: 'var(--mantine-color-dark-7)' },
+      },
+    },
+    Kbd: {
+      styles: {
+        root: {
+          background: 'var(--mantine-color-dark-5)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          color: 'var(--mantine-color-dark-2)',
+          fontSize: 11,
+          padding: '2px 7px',
         },
       },
     },

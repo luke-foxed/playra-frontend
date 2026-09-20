@@ -1,40 +1,76 @@
 import { Link } from '@tanstack/react-router'
-import { Box, AspectRatio, Group, Text } from '@mantine/core'
-import { useState } from 'react'
-import { useMediaQuery } from '@mantine/hooks'
+import { useHover } from '@mantine/hooks'
+import { Box, AspectRatio, Group, Text, UnstyledButton } from '@mantine/core'
+import dayjs from 'dayjs'
 import MetacriticBadge from '../../shared/metacritic_badge'
-import { HeartIcon, ClockIcon, StarIcon, XIcon } from '../../shared/icons'
-import useAddToWishlist from '../hooks/useAddToWishlist'
-import useRemoveFromWishlist from '../hooks/useRemoveFromWishlist'
+import { ClockIcon, HeartIcon, StarIcon, XIcon } from '../../shared/icons'
+import useWishlist from '../../lists/hooks/useWishlist'
+import { PLATFORM_LABELS } from '../constants'
 
-const PLATFORM: Record<string, string> = {
-  'playstation5': 'PS5',
-  'xbox-series-x': 'XSX',
-  pc: 'PC',
-  'nintendo-switch': 'NS',
-  'playstation4': 'PS4',
-  'xbox-one': 'XB1',
-  ios: 'iOS',
-  android: 'And',
-  mac: 'Mac',
-  linux: 'Lin',
-}
-
-const PLATFORM_PRIORITY: Record<string, number> = {
-  'playstation5': 1,
-  'xbox-series-x': 2,
-  pc: 3,
-  'nintendo-switch': 4,
-  'playstation4': 5,
-  'xbox-one': 6,
-  ios: 7,
-  android: 8,
-  mac: 9,
-  linux: 10,
-}
+const PLATFORM_ORDER = Object.fromEntries(PLATFORM_LABELS.map((p, i) => [p.slug, i]))
+const PLATFORM_LABEL = Object.fromEntries(PLATFORM_LABELS.map((p) => [p.slug, p.label]))
+const platformLabel = (slug: string) => PLATFORM_LABEL[slug] ?? slug.slice(0, 3).toUpperCase()
 
 const MAX_PLATFORMS_DESKTOP = 2
 const MAX_PLATFORMS_MOBILE = 1
+
+const badgeStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 5,
+  backdropFilter: 'blur(6px)',
+  transition: 'all 0.15s',
+}
+
+type BadgeProps = {
+  inWishlist: boolean
+  cardHovered: boolean
+  loading: boolean
+  onToggle: () => void
+}
+
+// Sits inside the card's <Link>, so it has to stop the navigation itself.
+function WishlistBadge({ inWishlist, cardHovered, loading, onToggle }: BadgeProps) {
+  const { hovered, ref } = useHover<HTMLButtonElement>()
+  const removing = inWishlist && hovered
+  const tone = removing ? 'red' : 'violet'
+
+  return (
+    <UnstyledButton
+      ref={ref}
+      disabled={loading}
+      pos="absolute"
+      bottom={10}
+      right={10}
+      px={10}
+      py={4}
+      bdrs={999}
+      fz={11}
+      fw={600}
+      c={removing ? 'red.4' : 'violet.3'}
+      bg={`color-mix(in oklab, var(--mantine-color-${tone}-${removing ? 7 : 5}) 22%, rgba(10,15,31,.72))`}
+      bd={`1px solid color-mix(in oklab, var(--mantine-color-${tone}-${removing ? 5 : 4}) 35%, transparent)`}
+      opacity={inWishlist || cardHovered ? 1 : 0}
+      style={{
+        ...badgeStyle,
+        boxShadow: `0 0 14px color-mix(in oklab, var(--mantine-color-${tone}-${removing ? 6 : 5}) ${removing ? 25 : 30}%, transparent)`,
+        transform: inWishlist || cardHovered ? 'none' : 'translateY(4px)',
+        pointerEvents: loading ? 'none' : undefined,
+      }}
+      onClick={(e: React.MouseEvent) => {
+        e.preventDefault()
+        e.stopPropagation()
+        onToggle()
+      }}
+    >
+      {inWishlist ? (
+        removing ? <><XIcon size={10} /> Remove</> : <><HeartIcon size={10} fill stroke={0} /> Wishlisted</>
+      ) : (
+        <><HeartIcon size={10} fill={false} stroke={2} /> Wishlist</>
+      )}
+    </UnstyledButton>
+  )
+}
 
 type Props = {
   id: number
@@ -48,194 +84,128 @@ type Props = {
   userScore?: number | null
   showWish?: boolean
   inWishlist?: boolean
-  onWishToggle?: (e: React.MouseEvent) => void
 }
 
 export default function GameCard({
   id, name, imageUrl, metacritic, released, genres, platforms, communityScore, userScore,
-  showWish = true, inWishlist = false, onWishToggle,
+  showWish = true, inWishlist = false,
 }: Props) {
+  const { hovered, ref } = useHover<HTMLAnchorElement>()
+  const { toggleWishlist, isLoading: wishLoading } = useWishlist(id)
+
   const hasUserScore = userScore != null && userScore > 0
   const displayScore = hasUserScore ? userScore : communityScore
-  const [hovered, setHovered] = useState(false)
-  const [badgeHovered, setBadgeHovered] = useState(false)
-  const isMobile = useMediaQuery('(max-width: 48em)')
-  const { addToWishlist, isLoading: addLoading } = useAddToWishlist(id)
-  const { removeFromWishlist, isLoading: removeLoading } = useRemoveFromWishlist(id)
-  const wishLoading = addLoading || removeLoading
-
   const year = released?.slice(0, 4)
-  const isUpcoming = released ? released > new Date().toISOString().slice(0, 10) : false
+  const isUpcoming = !!released && dayjs(released).isAfter(dayjs(), 'day')
 
-  const maxPlatforms = isMobile ? MAX_PLATFORMS_MOBILE : MAX_PLATFORMS_DESKTOP
-  const sorted = [...(platforms ?? [])].sort(
-    (a, b) => (PLATFORM_PRIORITY[a] ?? 99) - (PLATFORM_PRIORITY[b] ?? 99)
+  const sorted = [...(platforms ?? [])].sort((a, b) => (PLATFORM_ORDER[a] ?? 99) - (PLATFORM_ORDER[b] ?? 99))
+  const gamePayload = { game_id: id, name, released: released ?? null, genres: [], metacritic: metacritic ?? null, background_image: imageUrl }
+  const toggle = () => toggleWishlist({ inWishlist, gamePayload }).catch(() => {})
+
+  const hoverLayer = (style: React.CSSProperties) => (
+    <Box pos="absolute" opacity={hovered ? 1 : 0} style={{ pointerEvents: 'none', transition: 'opacity 0.2s', ...style }} />
   )
-  const shown = sorted.slice(0, maxPlatforms)
-  const overflow = sorted.length - shown.length
-
-  const coverBg: React.CSSProperties = imageUrl
-    ? { backgroundImage: `url(${imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-    : { background: 'linear-gradient(160deg, var(--mantine-color-dark-5) 0%, var(--mantine-color-dark-7) 120%)' }
-
-  const platformPill = {
-    fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 5,
-    background: 'var(--mantine-color-dark-5)',
-    color: 'var(--mantine-color-dark-1)',
-    flexShrink: 0,
-  }
-
-  const handleWishClick = (e: React.MouseEvent) => {
-    e.preventDefault()
-    if (onWishToggle) {
-      onWishToggle(e)
-    } else {
-      addToWishlist({ game_id: id, name, released: released ?? null, metacritic: metacritic ?? null, background_image: imageUrl })
-    }
-  }
 
   return (
-    <Link to='/games/$id' params={{ id: String(id) }} style={{ textDecoration: "none", display: "block" }}>
-      <Box
-        bg='dark.6'
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => { setHovered(false); setBadgeHovered(false) }}
-        style={{
-          borderRadius: "var(--mantine-radius-md)",
-          overflow: "hidden",
-          cursor: "pointer",
-          boxShadow: hovered
-            ? "0 12px 32px -8px rgba(0,0,0,.6)"
-            : "inset 0 0 0 1px rgba(255,255,255,0.07)",
-          transform: hovered ? "translateY(-3px)" : "none",
-          transition: "transform 0.18s ease, box-shadow 0.18s ease",
-        }}>
-        <AspectRatio ratio={3 / 4}>
-          <Box style={{ ...coverBg, position: "relative", overflow: "hidden" }}>
-            {/* Scanline texture */}
-            <Box style={{ position: "absolute", inset: 0, background: "repeating-linear-gradient(0deg, transparent 0 3px, rgba(0,0,0,.05) 3px 4px)" }} />
-            {/* Hover gradients — top + bottom */}
-            <Box style={{ position: "absolute", top: 0, left: 0, right: 0, height: "46%", background: "linear-gradient(to bottom, rgba(10,15,31,.62), transparent)", opacity: hovered ? 1 : 0, transition: "opacity 0.18s" }} />
-            <Box style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "35%", background: "linear-gradient(to top, rgba(10,15,31,.55), transparent)", opacity: hovered ? 1 : 0, transition: "opacity 0.18s" }} />
-            {/* Vignette — dark edges on hover */}
-            <Box style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.55) 100%)", opacity: hovered ? 1 : 0, transition: "opacity 0.22s" }} />
+    <Link
+      ref={ref}
+      to="/games/$id"
+      params={{ id: String(id) }}
+      style={{
+        display: 'block',
+        overflow: 'hidden',
+        borderRadius: 'var(--mantine-radius-md)',
+        background: 'var(--mantine-color-dark-6)',
+        textDecoration: 'none',
+        transition: 'transform 0.18s ease, box-shadow 0.18s ease',
+        transform: hovered ? 'translateY(-3px)' : 'none',
+        boxShadow: hovered ? '0 12px 32px -8px rgba(0,0,0,.6)' : 'inset 0 0 0 1px rgba(255,255,255,0.07)',
+      }}
+    >
+      <AspectRatio ratio={3 / 4}>
+        <Box
+          pos="relative"
+          bg={imageUrl ? undefined : 'linear-gradient(160deg, var(--mantine-color-dark-5) 0%, var(--mantine-color-dark-7) 120%)'}
+          style={{
+            overflow: 'hidden',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            ...(imageUrl ? { backgroundImage: `url("${imageUrl}")` } : {}),
+          }}
+        >
+          <Box pos="absolute" inset={0} bg="repeating-linear-gradient(0deg, transparent 0 3px, rgba(0,0,0,.05) 3px 4px)" />
+          {hoverLayer({ top: 0, left: 0, right: 0, height: '46%', background: 'linear-gradient(to bottom, rgba(10,15,31,.62), transparent)' })}
+          {hoverLayer({ bottom: 0, left: 0, right: 0, height: '35%', background: 'linear-gradient(to top, rgba(10,15,31,.55), transparent)' })}
+          {hoverLayer({ inset: 0, background: 'radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.55) 100%)' })}
 
-            {isUpcoming ? (
-              <Box pos='absolute' top={10} left={10}>
-                <Box style={{
-                  display: "inline-flex", alignItems: "center", gap: 5,
-                  background: "color-mix(in oklab, #7CC8E3 16%, rgba(10,15,31,.6))",
-                  backdropFilter: "blur(6px)", color: "#7CC8E3",
-                  borderRadius: 999, padding: "5px 11px", fontSize: 12, fontWeight: 500,
-                }}>
-                  <ClockIcon size={12} /> {year}
-                </Box>
-              </Box>
-            ) : (
-              showWish && !inWishlist && (
-                <Box
-                  pos="absolute"
-                  bottom={10}
-                  right={10}
-                  onClick={handleWishClick}
-                  style={{
-                    display: "inline-flex", alignItems: "center", gap: 5,
-                    background: "color-mix(in oklab, var(--mantine-color-violet-5) 22%, rgba(10,15,31,.72))",
-                    backdropFilter: "blur(6px)",
-                    color: "var(--mantine-color-violet-3)",
-                    borderRadius: 999,
-                    padding: "4px 10px",
-                    fontSize: 11,
-                    fontWeight: 600,
-                    border: "1px solid color-mix(in oklab, var(--mantine-color-violet-4) 35%, transparent)",
-                    boxShadow: "0 0 14px color-mix(in oklab, var(--mantine-color-violet-5) 30%, transparent)",
-                    opacity: hovered ? 1 : 0,
-                    transform: hovered ? "translateY(0)" : "translateY(4px)",
-                    transition: "opacity 0.15s, transform 0.15s",
-                    cursor: "pointer",
-                    pointerEvents: wishLoading ? "none" : "auto",
-                  }}
-                >
-                  <HeartIcon size={10} fill={false} stroke={2} />
-                  Wishlist
-                </Box>
-              )
-            )}
+          {isUpcoming && (
+            <Box
+              pos="absolute"
+              top={10}
+              left={10}
+              px={11}
+              py={5}
+              bdrs={999}
+              fz={12}
+              fw={500}
+              c="#7CC8E3"
+              bg="color-mix(in oklab, #7CC8E3 16%, rgba(10,15,31,.6))"
+              style={badgeStyle}
+            >
+              <ClockIcon size={12} /> {year}
+            </Box>
+          )}
 
-            {inWishlist && (
-              <Box
-                pos="absolute"
-                bottom={10}
-                right={10}
-                onMouseEnter={() => setBadgeHovered(true)}
-                onMouseLeave={() => setBadgeHovered(false)}
-                onClick={(e) => { e.preventDefault(); removeFromWishlist() }}
-                style={{
-                  display: "inline-flex", alignItems: "center", gap: 5,
-                  background: badgeHovered
-                    ? "color-mix(in oklab, var(--mantine-color-red-7) 22%, rgba(10,15,31,.72))"
-                    : "color-mix(in oklab, var(--mantine-color-violet-5) 22%, rgba(10,15,31,.72))",
-                  backdropFilter: "blur(6px)",
-                  color: badgeHovered ? "var(--mantine-color-red-4)" : "var(--mantine-color-violet-3)",
-                  borderRadius: 999,
-                  padding: "4px 10px",
-                  fontSize: 11,
-                  fontWeight: 600,
-                  border: badgeHovered
-                    ? "1px solid color-mix(in oklab, var(--mantine-color-red-5) 35%, transparent)"
-                    : "1px solid color-mix(in oklab, var(--mantine-color-violet-4) 35%, transparent)",
-                  boxShadow: badgeHovered
-                    ? "0 0 14px color-mix(in oklab, var(--mantine-color-red-6) 25%, transparent)"
-                    : "0 0 14px color-mix(in oklab, var(--mantine-color-violet-5) 30%, transparent)",
-                  cursor: "pointer",
-                  transition: "all 0.15s",
-                }}
-              >
-                {badgeHovered ? <XIcon size={10} /> : <HeartIcon size={10} fill stroke={0} />}
-                {badgeHovered ? "Remove" : "Wishlisted"}
-              </Box>
-            )}
+          {showWish && (!isUpcoming || inWishlist) && (
+            <WishlistBadge inWishlist={inWishlist} cardHovered={hovered} loading={wishLoading} onToggle={toggle} />
+          )}
 
-            {!isUpcoming && (
-              <Box pos='absolute' top={10} right={10}>
-                <MetacriticBadge score={metacritic ?? null} size={26} />
-              </Box>
-            )}
-          </Box>
-        </AspectRatio>
-
-        <Box px={12} py={10}>
-          <Text fz={10} tt='uppercase' c='dark.3' fw={700} style={{ letterSpacing: 1.4 }} lineClamp={1}>
-            {genres?.[0] ?? "-"}
-          </Text>
-          <Text fw={700} fz={13} c='dark.0' mt={2} lineClamp={1} style={{ lineHeight: 1.2, letterSpacing: -0.2 }}>
-            {name}
-          </Text>
-          <Group justify='space-between' mt={8} align='center' gap={4} wrap='nowrap'>
-            <Group gap={4} wrap='nowrap'>
-              {shown.map((slug) => (
-                <Box key={slug} style={platformPill}>
-                  {PLATFORM[slug] ?? slug.slice(0, 3).toUpperCase()}
-                </Box>
-              ))}
-              {overflow > 0 && <Box style={{ ...platformPill, color: "var(--mantine-color-dark-2)" }}>+{overflow}</Box>}
-              {!shown.length && year && <Text fz={11} c='dark.3' ff='monospace'>{year}</Text>}
-            </Group>
-            {!isUpcoming && (
-              <Group gap={3} wrap='nowrap' style={{ flexShrink: 0 }}>
-                <StarIcon
-                  size={12}
-                  fill={displayScore != null}
-                  style={{ color: displayScore != null ? (hasUserScore ? "var(--mantine-color-violet-4)" : "#F0C36B") : "var(--mantine-color-dark-4)" }}
-                />
-                <Text fz={12} fw={600} ff='monospace' c={displayScore != null ? "dark.1" : "dark.4"}>
-                  {displayScore != null ? displayScore.toFixed(1) : "—"}
-                </Text>
-              </Group>
-            )}
-          </Group>
+          {!isUpcoming && (
+            <Box pos="absolute" top={10} right={10}>
+              <MetacriticBadge score={metacritic ?? null} size={26} />
+            </Box>
+          )}
         </Box>
+      </AspectRatio>
+
+      <Box px={12} py={10}>
+        <Text fz={10} tt="uppercase" c="dark.3" fw={700} lineClamp={1} style={{ letterSpacing: 1.4 }}>
+          {genres?.[0] ?? '-'}
+        </Text>
+        <Text fw={700} fz={13} c="dark.0" mt={2} lineClamp={1} lh={1.2} style={{ letterSpacing: -0.2 }}>
+          {name}
+        </Text>
+        <Group justify="space-between" mt={8} align="center" gap={4} wrap="nowrap">
+          <Group gap={4} wrap="nowrap">
+            {sorted.slice(0, MAX_PLATFORMS_DESKTOP).map((slug, i) => (
+              <PlatformPill key={slug} visibleFrom={i >= MAX_PLATFORMS_MOBILE ? 'sm' : undefined}>{platformLabel(slug)}</PlatformPill>
+            ))}
+            {sorted.length > MAX_PLATFORMS_DESKTOP && (
+              <PlatformPill muted visibleFrom="sm">+{sorted.length - MAX_PLATFORMS_DESKTOP}</PlatformPill>
+            )}
+            {sorted.length > MAX_PLATFORMS_MOBILE && (
+              <PlatformPill muted hiddenFrom="sm">+{sorted.length - MAX_PLATFORMS_MOBILE}</PlatformPill>
+            )}
+            {!sorted.length && year && <Text fz={11} c="dark.3" ff="monospace">{year}</Text>}
+          </Group>
+          {!isUpcoming && (
+            <Group gap={3} wrap="nowrap" style={{ flexShrink: 0 }}>
+              <StarIcon
+                size={12}
+                fill={displayScore != null}
+                style={{ color: displayScore != null ? (hasUserScore ? 'var(--mantine-color-violet-4)' : '#F0C36B') : 'var(--mantine-color-dark-4)' }}
+              />
+              <Text fz={12} fw={600} ff="monospace" c={displayScore != null ? 'dark.1' : 'dark.4'}>
+                {displayScore != null ? displayScore.toFixed(1) : '—'}
+              </Text>
+            </Group>
+          )}
+        </Group>
       </Box>
     </Link>
   )
+}
+
+function PlatformPill({ muted, ...props }: { muted?: boolean; children: React.ReactNode; visibleFrom?: 'sm'; hiddenFrom?: 'sm' }) {
+  return <Box component="span" px={6} py={2} bdrs={5} fz={10} fw={600} bg="dark.5" c={muted ? 'dark.2' : 'dark.1'} style={{ flexShrink: 0 }} {...props} />
 }
