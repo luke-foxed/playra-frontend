@@ -4,12 +4,13 @@ export const SORT_OPTIONS: { group: string; items: { value: string; label: strin
     items: [{ value: "-total_rating_count", label: "Most popular" }],
   },
   {
-    // IGDB's backend ordering doesn't expose critic score (aggregated_rating)
-    // directly, so this sorts by the blended total_rating instead.
+    // Sorted by aggregated_rating (critic score) -- the backend requires a
+    // minimum review count for this ordering, so it doesn't surface a game
+    // sitting at a lucky 100 off one or two reviews.
     group: "Rating",
     items: [
-      { value: "-total_rating", label: "Highest rated" },
-      { value: "total_rating", label: "Lowest rated" },
+      { value: "-aggregated_rating", label: "Highest rated" },
+      { value: "aggregated_rating", label: "Lowest rated" },
     ],
   },
   {

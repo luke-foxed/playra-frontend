@@ -14,10 +14,9 @@ import { useUserLibrary } from '../features/games/hooks/useUserLibrary'
 import { FireIcon, SparkleIcon, StarIcon, ChevronIcon, GamepadIcon } from '../features/shared/icons'
 import SectionHeading from '../features/shared/section_heading'
 
-// Backend's ordering enum doesn't include aggregated_rating directly, so sort by
-// the blended total_rating (closest available proxy) and filter to games that
-// actually have a critic score for display.
-const TOP = { page: 1, page_size: 8, ordering: '-total_rating' as const }
+// Sorted by aggregated_rating (critic score) -- the backend requires a minimum
+// review count for this ordering, so every result here has a real score.
+const TOP = { page: 1, page_size: 8, ordering: '-aggregated_rating' as const }
 
 export const Route = createFileRoute('/')({
   component: RouteComponent,

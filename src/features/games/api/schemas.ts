@@ -51,6 +51,7 @@ const orderingValues = [
   "rating", "-rating",
   "total_rating", "-total_rating",
   "total_rating_count", "-total_rating_count",
+  "aggregated_rating", "-aggregated_rating",
 ] as const
 
 export const GamesSearchSchema = z.object({
