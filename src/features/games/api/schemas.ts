@@ -96,6 +96,7 @@ export const RelatedGameSchema = z.object({
   cover_url: z.string().nullable(),
   first_release_date: z.number().nullable(),
   total_rating: z.number().nullable().optional(),
+  genres: z.array(GameGenreSchema).catch([]),
 })
 
 export const GameRelatedResponseSchema = z.object({
