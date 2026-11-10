@@ -163,10 +163,12 @@ export default function GameCard({
       </AspectRatio>
 
       <Box px={12} py={10}>
-        <Text fz={10} tt="uppercase" c="dark.3" fw={700} lineClamp={1} style={{ letterSpacing: 1.4 }}>
-          {genres?.[0] ?? '-'}
-        </Text>
-        <Text fw={700} fz={13} c="dark.0" mt={2} lineClamp={1} lh={1.2} style={{ letterSpacing: -0.2 }}>
+        {genres?.[0] && (
+          <Text fz={10} tt="uppercase" c="dark.3" fw={700} lineClamp={1} style={{ letterSpacing: 1.4 }}>
+            {genres[0]}
+          </Text>
+        )}
+        <Text fw={700} fz={13} c="dark.0" mt={genres?.[0] ? 2 : 0} lineClamp={1} lh={1.2} style={{ letterSpacing: -0.2 }}>
           {name}
         </Text>
         <Group justify="space-between" mt={8} align="center" gap={4} wrap="nowrap">
