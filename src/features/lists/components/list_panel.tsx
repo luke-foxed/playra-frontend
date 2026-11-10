@@ -164,14 +164,14 @@ export default function ListPanel({ profileUserId, currentUserId }: Props) {
                             </ActionIcon>
                           )}
                           <Card.Section>
-                            <Image src={game.background_image} h={90} alt={game.name} />
+                            <Image src={game.cover_url} h={90} alt={game.name} />
                           </Card.Section>
                           <Text size="sm" fw={500} mt="xs" lineClamp={2}>
                             {game.name}
                           </Text>
-                          {game.metacritic != null && (
+                          {game.critic_rating != null && (
                             <Badge size="xs" color="green" mt={4}>
-                              {game.metacritic}
+                              {game.critic_rating}
                             </Badge>
                           )}
                         </Card>

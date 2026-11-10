@@ -1,123 +1,109 @@
 import { z } from "zod"
 
 // Response schemas
-export const NamedRefSchema = z.object({ id: z.number(), name: z.string(), slug: z.string() })
 
-export const GenreSchema = NamedRefSchema
+// The standalone `/genres` endpoint returns {id, name, slug}. Genres embedded on a
+// game object don't carry a slug (IGDB doesn't give one in that context), so they
+// get their own lighter schema below.
+export const GenreSchema = z.object({ id: z.number(), name: z.string(), slug: z.string() })
+export const GameGenreSchema = z.object({ id: z.number(), name: z.string() })
 export const PlatformSchema = z.object({
-  platform: NamedRefSchema,
-})
-export const RatingSchema = z.object({
   id: z.number(),
-  title: z.string(),
-  count: z.number(),
-  percent: z.number(),
+  name: z.string(),
+  abbreviation: z.string().nullable().optional(),
 })
-export const ScreenshotSchema = z.object({ id: z.number(), image: z.string() })
-export const DeveloperSchema = NamedRefSchema
-export const PublisherSchema = NamedRefSchema
-export const TagSchema = NamedRefSchema
 
 export const GameSchema = z.object({
   id: z.number(),
   slug: z.string(),
   name: z.string(),
-  released: z.string().nullable(),
-  background_image: z.string().nullable(),
-  background_image_additional: z.string().nullable().optional(),
-  rating: z.number(),
-  rating_top: z.number(),
-  ratings: z.array(RatingSchema).catch([]),
-  ratings_count: z.number(),
-  metacritic: z.number().nullable(),
+  summary: z.string().nullable().optional(),
+  first_release_date: z.number().nullable(), // unix timestamp
+  cover_url: z.string().nullable(),
+  rating: z.number().nullable(),              // 0-100, IGDB user rating
+  aggregated_rating: z.number().nullable(),   // 0-100, critic score
+  total_rating: z.number().nullable(),        // 0-100, blended
+  total_rating_count: z.number().nullable(),
   playra_community_score: z.number().nullable().catch(null),
-  genres: z.array(GenreSchema).catch([]),
+  genres: z.array(GameGenreSchema).catch([]),
   platforms: z.array(PlatformSchema).catch([]),
-  short_screenshots: z.array(ScreenshotSchema).optional(),
 })
 
-export const EsrbRatingSchema = NamedRefSchema
-
 export const GameDetailSchema = GameSchema.extend({
-  description: z.string().optional().catch(undefined),
-  description_raw: z.string(),
-  website: z.string(),
-  playtime: z.number(),
-  developers: z.array(DeveloperSchema),
-  publishers: z.array(PublisherSchema),
-  tags: z.array(TagSchema),
-  esrb_rating: EsrbRatingSchema.nullable().optional(),
+  storyline: z.string().nullable().optional(),
+  developers: z.array(z.string()).catch([]),
+  publishers: z.array(z.string()).catch([]),
+  screenshot_urls: z.array(z.string()).catch([]),
+  website: z.string().nullable().optional(),
 })
 
 export type Genre = z.infer<typeof GenreSchema>
+export type GameGenre = z.infer<typeof GameGenreSchema>
 export type Platform = z.infer<typeof PlatformSchema>
-export type Rating = z.infer<typeof RatingSchema>
-export type Screenshot = z.infer<typeof ScreenshotSchema>
-export type Developer = z.infer<typeof DeveloperSchema>
-export type Publisher = z.infer<typeof PublisherSchema>
-export type Tag = z.infer<typeof TagSchema>
 export type Game = z.infer<typeof GameSchema>
 export type GameDetail = z.infer<typeof GameDetailSchema>
 
 // Search params schema
 const orderingValues = [
-  "name", "released", "added", "created", "updated", "rating", "metacritic",
-  "-name", "-released", "-added", "-created", "-updated", "-rating", "-metacritic",
+  "name", "-name",
+  "first_release_date", "-first_release_date",
+  "rating", "-rating",
+  "total_rating", "-total_rating",
+  "total_rating_count", "-total_rating_count",
 ] as const
 
 export const GamesSearchSchema = z.object({
   page: z.number().int().positive().catch(1),
   page_size: z.number().int().positive().catch(20),
   search: z.string().optional(),
-  search_precise: z.boolean().optional(),
-  search_exact: z.boolean().optional(),
-  parent_platforms: z.string().optional(),
-  platforms: z.string().optional(),
-  stores: z.string().optional(),
-  developers: z.string().optional(),
-  publishers: z.string().optional(),
-  genres: z.string().optional(),
-  tags: z.string().optional(),
-  creators: z.string().optional(),
-  dates: z.string().optional(),
-  updated: z.string().optional(),
-  platforms_count: z.number().int().optional(),
-  metacritic: z.string().optional(),
-  exclude_collection: z.number().int().optional(),
-  exclude_additions: z.boolean().optional(),
-  exclude_parents: z.boolean().optional(),
-  exclude_game_series: z.boolean().optional(),
-  exclude_stores: z.string().optional(),
+  genres: z.string().optional(),               // comma-separated ids
+  platforms: z.string().optional(),             // comma-separated ids
+  themes: z.string().optional(),                // comma-separated ids
+  game_modes: z.string().optional(),            // comma-separated ids
+  player_perspectives: z.string().optional(),   // comma-separated ids
+  release_year_min: z.number().int().optional(),
+  release_year_max: z.number().int().optional(),
+  rating_min: z.number().optional(),
+  rating_max: z.number().optional(),
   ordering: z.enum(orderingValues).optional(),
 })
 
 export type GetGamesParams = z.infer<typeof GamesSearchSchema>
 
-export const paginatedResponse = <T extends z.ZodTypeAny>(schema: T) =>
-  z.object({
-    count: z.number(),
-    next: z.string().nullable(),
-    previous: z.string().nullable(),
-    results: z.array(schema),
-  })
-
-export type PaginatedResponse<T> = {
-  count: number
-  next: string | null
-  previous: string | null
-  results: T[]
-}
-
-export const GamesResponseSchema = paginatedResponse(GameSchema)
+export const GamesResponseSchema = z.object({
+  results: z.array(GameSchema),
+  page: z.number(),
+  page_size: z.number(),
+  has_more: z.boolean(),
+})
 
 export type GamesResponse = z.infer<typeof GamesResponseSchema>
 
 export const ScreenshotsResponseSchema = z.object({
-  count: z.number(),
-  results: z.array(ScreenshotSchema),
+  results: z.array(z.string()), // resolved images.igdb.com URLs
 })
 
 export type ScreenshotsResponse = z.infer<typeof ScreenshotsResponseSchema>
+
+// Replaces RAWG's flat "game series" list. IGDB's collection (franchise) and
+// similar_games don't map 1:1 to a single games list.
+export const RelatedGameSchema = z.object({
+  id: z.number(),
+  name: z.string().nullable(),
+  slug: z.string().nullable(),
+  cover_url: z.string().nullable(),
+  first_release_date: z.number().nullable(),
+  total_rating: z.number().nullable().optional(),
+})
+
+export const GameRelatedResponseSchema = z.object({
+  collection_name: z.string().nullable(),
+  collection_games: z.array(RelatedGameSchema).catch([]),
+  similar_games: z.array(RelatedGameSchema).catch([]),
+})
+
+export type RelatedGame = z.infer<typeof RelatedGameSchema>
+export type GameRelated = z.infer<typeof GameRelatedResponseSchema>
 
 export const UserGameSchema = z.object({
   in_wishlist: z.boolean(),

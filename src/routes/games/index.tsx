@@ -35,7 +35,6 @@ function RouteComponent() {
   const filterCount = filters.activeFilterCount > 0 && (
     <Badge size="xs" circle variant="gradient" gradient={{ from: "violet.4", to: "violet.6" }}>{filters.activeFilterCount}</Badge>
   )
-  const totalPages = Math.ceil((games?.count ?? 0) / (search.page_size ?? 20))
 
   return (
     <Container size={1440} px="xl" pb={60}>
@@ -78,8 +77,10 @@ function RouteComponent() {
                 Filters {filterCount}
               </Button>
 
+              {/* No total count any more (IGDB doesn't give one cheaply) -- show
+                  what's on this page instead. */}
               <Text fz="sm" c="dark.2" ff="monospace">
-                {games?.count ?? "—"} {games?.count === 1 ? "game" : "games"}
+                {games?.results.length ?? "—"} {games?.results.length === 1 ? "game" : "games"} on this page
               </Text>
 
               {filters.hasFilters && (
@@ -93,7 +94,7 @@ function RouteComponent() {
               <Text fz="sm" c="dark.2" visibleFrom="xs">Sort</Text>
               <Select
                 data={SORT_OPTIONS}
-                value={search.ordering ?? "-rating"}
+                value={search.ordering ?? "-total_rating_count"}
                 onChange={(val) => val && filters.setOrdering(val as typeof search.ordering)}
                 allowDeselect={false}
                 size="xs"
@@ -107,7 +108,6 @@ function RouteComponent() {
             games={games}
             isFetching={isFetching}
             isLoading={isLoading}
-            totalPages={totalPages}
             currentPage={search.page ?? 1}
             wishlistedIds={wishlistedIds}
             onPageChange={filters.setPage}

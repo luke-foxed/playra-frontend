@@ -1,15 +1,9 @@
 import { Link } from '@tanstack/react-router'
 import { useHover } from '@mantine/hooks'
 import { Box, AspectRatio, Group, Text, UnstyledButton } from '@mantine/core'
-import dayjs from 'dayjs'
 import MetacriticBadge from '../../shared/metacritic_badge'
 import { ClockIcon, HeartIcon, StarIcon, XIcon } from '../../shared/icons'
 import useWishlist from '../../lists/hooks/useWishlist'
-import { PLATFORM_LABELS } from '../constants'
-
-const PLATFORM_ORDER = Object.fromEntries(PLATFORM_LABELS.map((p, i) => [p.slug, i]))
-const PLATFORM_LABEL = Object.fromEntries(PLATFORM_LABELS.map((p) => [p.slug, p.label]))
-const platformLabel = (slug: string) => PLATFORM_LABEL[slug] ?? slug.slice(0, 3).toUpperCase()
 
 const MAX_PLATFORMS_DESKTOP = 2
 const MAX_PLATFORMS_MOBILE = 1
@@ -76,8 +70,9 @@ type Props = {
   id: number
   name: string
   imageUrl: string | null
-  metacritic?: number | null
-  released?: string | null
+  criticRating?: number | null
+  releaseYear?: number | null
+  isUpcoming?: boolean
   genres?: string[]
   platforms?: string[]
   communityScore?: number | null
@@ -87,7 +82,7 @@ type Props = {
 }
 
 export default function GameCard({
-  id, name, imageUrl, metacritic, released, genres, platforms, communityScore, userScore,
+  id, name, imageUrl, criticRating, releaseYear, isUpcoming = false, genres, platforms, communityScore, userScore,
   showWish = true, inWishlist = false,
 }: Props) {
   const { hovered, ref } = useHover<HTMLAnchorElement>()
@@ -95,11 +90,10 @@ export default function GameCard({
 
   const hasUserScore = userScore != null && userScore > 0
   const displayScore = hasUserScore ? userScore : communityScore
-  const year = released?.slice(0, 4)
-  const isUpcoming = !!released && dayjs(released).isAfter(dayjs(), 'day')
+  const year = releaseYear != null ? String(releaseYear) : undefined
 
-  const sorted = [...(platforms ?? [])].sort((a, b) => (PLATFORM_ORDER[a] ?? 99) - (PLATFORM_ORDER[b] ?? 99))
-  const gamePayload = { game_id: id, name, released: released ?? null, genres: [], metacritic: metacritic ?? null, background_image: imageUrl }
+  const sorted = platforms ?? []
+  const gamePayload = { game_id: id, name, release_year: releaseYear ?? null, genres: [], critic_rating: criticRating ?? null, cover_url: imageUrl }
   const toggle = () => toggleWishlist({ inWishlist, gamePayload }).catch(() => {})
 
   const hoverLayer = (style: React.CSSProperties) => (
@@ -162,7 +156,7 @@ export default function GameCard({
 
           {!isUpcoming && (
             <Box pos="absolute" top={10} right={10}>
-              <MetacriticBadge score={metacritic ?? null} size={26} />
+              <MetacriticBadge score={criticRating ?? null} size={26} />
             </Box>
           )}
         </Box>
@@ -177,8 +171,8 @@ export default function GameCard({
         </Text>
         <Group justify="space-between" mt={8} align="center" gap={4} wrap="nowrap">
           <Group gap={4} wrap="nowrap">
-            {sorted.slice(0, MAX_PLATFORMS_DESKTOP).map((slug, i) => (
-              <PlatformPill key={slug} visibleFrom={i >= MAX_PLATFORMS_MOBILE ? 'sm' : undefined}>{platformLabel(slug)}</PlatformPill>
+            {sorted.slice(0, MAX_PLATFORMS_DESKTOP).map((label, i) => (
+              <PlatformPill key={label} visibleFrom={i >= MAX_PLATFORMS_MOBILE ? 'sm' : undefined}>{label}</PlatformPill>
             ))}
             {sorted.length > MAX_PLATFORMS_DESKTOP && (
               <PlatformPill muted visibleFrom="sm">+{sorted.length - MAX_PLATFORMS_DESKTOP}</PlatformPill>

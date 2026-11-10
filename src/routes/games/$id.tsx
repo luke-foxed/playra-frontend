@@ -3,15 +3,15 @@ import { useSuspenseQuery, useQuery, useQueryClient } from "@tanstack/react-quer
 import { useDisclosure, useMediaQuery } from "@mantine/hooks"
 import { useState } from "react"
 import { Anchor, Badge, BackgroundImage, Box, Container, Grid, Group, SimpleGrid, Stack, Text, Title } from "@mantine/core"
-import { gameQueryOptions, userGameQueryOptions, gameScreenshotsQueryOptions, similarGamesQueryOptions } from "../../features/games/api/games"
-import type { GameDetail } from "../../features/games/api/schemas"
+import dayjs from "dayjs"
+import { gameQueryOptions, userGameQueryOptions, gameRelatedQueryOptions } from "../../features/games/api/games"
+import type { RelatedGame } from "../../features/games/api/schemas"
 import { listsQueryOptions } from "../../features/lists/api/lists"
 import { GamepadIcon, SparkleIcon } from "../../features/shared/icons"
 import SectionHeading from "../../features/shared/section_heading"
 import routeProtector from "../../lib/route_protector"
 import { BackButton } from "../../features/shared/back_pill"
 import GameCard from "../../features/games/components/game_card"
-import { toGameCardProps } from "../../features/games/utils/game_card_props"
 import { useUserLibrary } from "../../features/games/hooks/useUserLibrary"
 import MetacriticBadge from "../../features/shared/metacritic_badge"
 import GameActions from "../../features/games/components/game_actions"
@@ -42,7 +42,6 @@ function RouteComponent() {
   const { data: game } = useSuspenseQuery(gameQueryOptions(id))
   const { data: userGame } = useSuspenseQuery(userGameQueryOptions(id))
   const { data: myLists } = useSuspenseQuery(listsQueryOptions())
-  const { data: screenshots } = useQuery(gameScreenshotsQueryOptions(id))
 
   const [listsOpen, { open: openLists, close: closeLists }] = useDisclosure(false)
   const [descriptionOpen, { open: openDescription, close: closeDescription }] = useDisclosure(false)
@@ -52,27 +51,27 @@ function RouteComponent() {
   const openGallery = (i: number) => { setGalleryIndex(i); openGalleryModal() }
   const goBack = () => (window.history.length > 1 ? router.history.back() : router.navigate({ to: "/games", search: { page: 1, page_size: 20 } }))
 
+  const releaseYear = game.first_release_date != null ? dayjs.unix(game.first_release_date).year() : null
+
   const gamePayload = {
     game_id: game.id,
     name: game.name,
-    released: game.released,
+    release_year: releaseYear,
     genres: game.genres,
-    metacritic: game.metacritic,
-    background_image: game.background_image,
+    critic_rating: game.aggregated_rating,
+    cover_url: game.cover_url,
   }
 
-  const screenshotsList = screenshots?.results ?? []
-  const baseImages = [game.background_image_additional, game.background_image]
-    .filter(Boolean)
-    .map((img, i) => ({ id: -(i + 1), image: img! }))
-  const allScreenshots = [...baseImages, ...screenshotsList]
+  // IGDB's cover is the only hero/poster image now -- RAWG's separate
+  // background_image_additional banner has no equivalent, so it's used for both.
+  const allScreenshots = [game.cover_url, ...game.screenshot_urls].filter((u): u is string => !!u)
 
   const inLists = userGame.lists ?? []
 
   return (
     <Box>
       <Box pos="relative" h={{ base: 220, sm: 340 }}>
-        <BackgroundImage src={game.background_image_additional || game.background_image || ""} pos="absolute" inset={0}>
+        <BackgroundImage src={game.cover_url ?? ""} pos="absolute" inset={0}>
           <Box
             pos="absolute"
             inset={0}
@@ -86,8 +85,8 @@ function RouteComponent() {
 
         <Grid mt="xl" gap={{ base: 16, sm: 36 }} align="flex-start">
           <Grid.Col span={{ base: 12, sm: 3.5 }}>
-            {game.background_image ? (
-              <BackgroundImage src={game.background_image} bdrs="lg" h={{ base: 360, sm: "auto" }} style={{ aspectRatio: "3/4", ...coverShadow }}>
+            {game.cover_url ? (
+              <BackgroundImage src={game.cover_url} bdrs="lg" h={{ base: 360, sm: "auto" }} style={{ aspectRatio: "3/4", ...coverShadow }}>
                 <Box pos="absolute" inset={0} bg="repeating-linear-gradient(0deg, transparent 0 3px, rgba(0,0,0,.05) 3px 4px)" />
               </BackgroundImage>
             ) : (
@@ -117,18 +116,18 @@ function RouteComponent() {
               </Title>
 
               <Text c="dark.1" fz={15}>
-                {game.developers?.[0]?.name ?? ""} · {game.released?.slice(0, 4)}
+                {game.developers?.[0] ?? ""} · {releaseYear ?? ""}
               </Text>
 
               <Group gap={7} wrap="wrap">
                 {game.platforms.map((p) => (
-                  <Badge key={p.platform.id} variant="default" radius="xl" fz="xs">{p.platform.name}</Badge>
+                  <Badge key={p.id} variant="default" radius="xl" fz="xs">{p.name}</Badge>
                 ))}
               </Group>
 
               {allScreenshots.length > 0 && <ScreenshotStack screenshots={allScreenshots} onOpen={() => openGallery(0)} />}
 
-              <GameScores metacritic={game.metacritic} communityScore={game.playra_community_score} />
+              <GameScores criticRating={game.aggregated_rating} communityScore={game.playra_community_score} />
 
               <GameActions
                 gameId={id}
@@ -140,9 +139,9 @@ function RouteComponent() {
                 onAddToList={openLists}
               />
 
-              {game.description_raw && (
+              {game.summary && (
                 <Box>
-                  <Text c="dark.1" fz="sm" lh={1.7} lineClamp={3}>{game.description_raw}</Text>
+                  <Text c="dark.1" fz="sm" lh={1.7} lineClamp={3}>{game.summary}</Text>
                   <Anchor component="button" type="button" fz={13} fw={500} c="violet.4" pt={6} onClick={openDescription}>
                     Read more
                   </Anchor>
@@ -153,15 +152,10 @@ function RouteComponent() {
         </Grid>
 
         {allScreenshots.length > 0 && (
-          <ScreenshotStrip
-            gameName={game.name}
-            screenshots={allScreenshots}
-            totalCount={screenshots ? screenshots.count + baseImages.length : undefined}
-            onOpen={openGallery}
-          />
+          <ScreenshotStrip gameName={game.name} screenshots={allScreenshots} onOpen={openGallery} />
         )}
 
-        <SimilarGames game={game} />
+        <RelatedGames gameId={id} />
       </Container>
 
       <GameDescriptionModal game={game} opened={descriptionOpen} onClose={closeDescription} />
@@ -197,45 +191,79 @@ function RouteComponent() {
 
 const coverShadow = { boxShadow: "0 24px 60px -20px rgba(0,0,0,.8), inset 0 0 0 1px rgba(255,255,255,0.14)" }
 
-function SimilarGames({ game }: { game: GameDetail }) {
-  const { data: similar = [] } = useQuery(similarGamesQueryOptions(game.id, game))
+function relatedCardProps(g: RelatedGame, rating: number | null = null) {
+  return {
+    id: g.id,
+    name: g.name ?? "",
+    imageUrl: g.cover_url,
+    criticRating: rating,
+    releaseYear: g.first_release_date != null ? dayjs.unix(g.first_release_date).year() : null,
+    isUpcoming: g.first_release_date != null && dayjs.unix(g.first_release_date).isAfter(dayjs(), 'day'),
+  }
+}
+
+// Replaces RAWG's "game series" section. IGDB has no single flat list here --
+// a game's franchise (collection) and its separately-ranked similar_games are two
+// distinct concepts, so they render as two sections when present.
+function RelatedGames({ gameId }: { gameId: number }) {
+  const { data: related } = useQuery(gameRelatedQueryOptions(gameId))
   const { wishlistedIds, userRatings } = useUserLibrary()
 
-  if (similar.length === 0) return null
+  if (!related || (related.collection_games.length === 0 && related.similar_games.length === 0)) return null
 
   return (
-    <Box mt={44} mb={60}>
-      <SectionHeading icon={<SparkleIcon size={18} />}>Similar games</SectionHeading>
-      <SimpleGrid cols={{ base: 2, sm: 3, md: 4, lg: 6 }} spacing="md">
-        {similar.map((g) => (
-          <GameCard
-            key={g.id}
-            {...toGameCardProps(g)}
-            inWishlist={wishlistedIds.has(g.id)}
-            userScore={userRatings.get(g.id) ?? null}
-          />
-        ))}
-      </SimpleGrid>
-    </Box>
+    <>
+      {related.collection_games.length > 0 && (
+        <Box mt={44}>
+          <SectionHeading icon={<SparkleIcon size={18} />}>{related.collection_name ?? "In this collection"}</SectionHeading>
+          <SimpleGrid cols={{ base: 2, sm: 3, md: 4, lg: 6 }} spacing="md">
+            {related.collection_games.map((g) => (
+              <GameCard
+                key={g.id}
+                {...relatedCardProps(g)}
+                inWishlist={wishlistedIds.has(g.id)}
+                userScore={userRatings.get(g.id) ?? null}
+              />
+            ))}
+          </SimpleGrid>
+        </Box>
+      )}
+
+      {related.similar_games.length > 0 && (
+        <Box mt={44} mb={60}>
+          <SectionHeading icon={<SparkleIcon size={18} />}>Similar games</SectionHeading>
+          <SimpleGrid cols={{ base: 2, sm: 3, md: 4, lg: 6 }} spacing="md">
+            {related.similar_games.map((g) => (
+              <GameCard
+                key={g.id}
+                {...relatedCardProps(g, g.total_rating ?? null)}
+                inWishlist={wishlistedIds.has(g.id)}
+                userScore={userRatings.get(g.id) ?? null}
+              />
+            ))}
+          </SimpleGrid>
+        </Box>
+      )}
+    </>
   )
 }
 
 type Props = {
-  metacritic: number | null
+  criticRating: number | null
   communityScore: number | null | undefined
 }
 
-function GameScores({ metacritic, communityScore }: Props) {
+function GameScores({ criticRating, communityScore }: Props) {
   const isMobile = useMediaQuery('(max-width: 48em)')
   const hasScore = communityScore != null
 
   return (
     <Group gap={0} align="center" wrap="nowrap" w={{ base: '100%', sm: 'auto' }}>
       <Group gap={isMobile ? 8 : 12} align="center" pr={{ base: 'md', sm: 'lg' }} flex={{ base: 1, sm: 'none' }}>
-        <MetacriticBadge score={metacritic} size={isMobile ? 40 : 54} />
+        <MetacriticBadge score={criticRating} size={isMobile ? 40 : 54} />
         <Stack gap={1}>
-          <Text fw={600} fz={{ base: 'xs', sm: 'sm' }}>Metacritic</Text>
-          <Text c="dark.2" fz="xs">Critic score</Text>
+          <Text fw={600} fz={{ base: 'xs', sm: 'sm' }}>Critic score</Text>
+          <Text c="dark.2" fz="xs">IGDB</Text>
         </Stack>
       </Group>
 

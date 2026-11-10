@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useDebouncedValue } from '@mantine/hooks'
 import { Box, Button, Center, Flex, Loader, ScrollArea, Stack, Text, TextInput, UnstyledButton } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
+import dayjs from 'dayjs'
 import { gamesQueryOptions } from '../../games/api/games'
 import type { Game } from '../../games/api/schemas'
 import { SearchIcon } from '../../shared/icons'
@@ -37,8 +38,9 @@ export default function GamePickerModal({ listId, currentGameIds, onClose, onRef
     try {
       if (add) {
         await addGamesToList(listId, [{
-          game_id: game.id, name: game.name, released: game.released, genres: game.genres,
-          metacritic: game.metacritic, background_image: game.background_image,
+          game_id: game.id, name: game.name,
+          release_year: game.first_release_date != null ? dayjs.unix(game.first_release_date).year() : null,
+          genres: game.genres, critic_rating: game.aggregated_rating, cover_url: game.cover_url,
         }])
       } else {
         await removeGamesFromList(listId, [game.id])
@@ -86,14 +88,14 @@ export default function GamePickerModal({ listId, currentGameIds, onClose, onRef
                     bg="dark.5"
                     style={{
                       flexShrink: 0,
-                      backgroundImage: g.background_image ? `url("${g.background_image}")` : 'none',
+                      backgroundImage: g.cover_url ? `url("${g.cover_url}")` : 'none',
                       backgroundSize: 'cover', backgroundPosition: 'center',
                       boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)',
                     }}
                   />
                   <Text fz="sm" fw={500} flex={1}>
                     {g.name}
-                    <Text fz="xs" c="dark.2" fw={400}>{g.released?.slice(0, 4)} · {g.genres.map((x) => x.name).join(', ')}</Text>
+                    <Text fz="xs" c="dark.2" fw={400}>{g.first_release_date != null ? dayjs.unix(g.first_release_date).year() : ''} · {g.genres.map((x) => x.name).join(', ')}</Text>
                   </Text>
                   <Box
                     fz={11}

@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { Anchor, Box, Container, Group, ScrollArea, SimpleGrid, Stack, Text } from '@mantine/core'
 import { useHover } from '@mantine/hooks'
+import dayjs from 'dayjs'
 import routeProtector from '../lib/route_protector'
 import { gamesQueryOptions, popularGamesQueryOptions, recentGamesQueryOptions } from '../features/games/api/games'
 import GameCard from '../features/games/components/game_card'
@@ -13,7 +14,10 @@ import { useUserLibrary } from '../features/games/hooks/useUserLibrary'
 import { FireIcon, SparkleIcon, StarIcon, ChevronIcon, GamepadIcon } from '../features/shared/icons'
 import SectionHeading from '../features/shared/section_heading'
 
-const TOP = { page: 1, page_size: 8, ordering: '-metacritic' as const }
+// Backend's ordering enum doesn't include aggregated_rating directly, so sort by
+// the blended total_rating (closest available proxy) and filter to games that
+// actually have a critic score for display.
+const TOP = { page: 1, page_size: 8, ordering: '-total_rating' as const }
 
 export const Route = createFileRoute('/')({
   component: RouteComponent,
@@ -44,7 +48,7 @@ function RouteComponent() {
 
   const popular = popularData.results
   const fresh = recentData.results
-  const topRated = topData.results.filter((g) => g.metacritic != null).slice(0, 8)
+  const topRated = topData.results.filter((g) => g.aggregated_rating != null).slice(0, 8)
   const featured = fresh[0]
 
   const browse = <BrowseAll onClick={() => navigate({ to: '/games', search: { page: 1, page_size: 20 } })} />
@@ -119,24 +123,24 @@ function TopRatedRow({ game, rank }: { game: Game; rank: number }) {
           style={{
             flexShrink: 0,
             placeItems: 'center',
-            backgroundImage: game.background_image ? `url("${game.background_image}")` : undefined,
+            backgroundImage: game.cover_url ? `url("${game.cover_url}")` : undefined,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)',
           }}
         >
-          {!game.background_image && <GamepadIcon size={24} />}
+          {!game.cover_url && <GamepadIcon size={24} />}
         </Box>
         <Box flex={1} miw={0}>
           <Text fw={600} fz={15} truncate style={{ letterSpacing: -0.3 }}>{game.name}</Text>
-          <Text fz="xs" c="dark.2" mt={2}>{game.released?.slice(0, 4)}</Text>
+          <Text fz="xs" c="dark.2" mt={2}>{game.first_release_date != null ? dayjs.unix(game.first_release_date).year() : ''}</Text>
         </Box>
         <Group gap={6} visibleFrom="sm" wrap="nowrap">
           {game.genres.slice(0, 2).map((x) => (
             <Box key={x.id} px={11} py={5} bdrs={999} bg="dark.5" c="dark.1" fz={12} fw={500}>{x.name}</Box>
           ))}
         </Group>
-        <MetacriticBadge score={game.metacritic} />
+        <MetacriticBadge score={game.aggregated_rating} />
       </Group>
     </Link>
   )

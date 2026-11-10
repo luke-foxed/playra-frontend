@@ -1,6 +1,7 @@
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useHover } from '@mantine/hooks'
 import { Badge, Box, Button, Group, Text, Title } from '@mantine/core'
+import dayjs from 'dayjs'
 import MetacriticBadge from '../../shared/metacritic_badge'
 import { HeartIcon, PlayIcon, SparkleIcon } from '../../shared/icons'
 import useWishlist from '../../lists/hooks/useWishlist'
@@ -16,8 +17,9 @@ function WishlistButton({ game }: { game: Game }) {
   const { wishlistedIds } = useUserLibrary()
   const inWishlist = wishlistedIds.has(game.id)
   const gamePayload = {
-    game_id: game.id, name: game.name, released: game.released, genres: game.genres,
-    metacritic: game.metacritic, background_image: game.background_image,
+    game_id: game.id, name: game.name,
+    release_year: game.first_release_date != null ? dayjs.unix(game.first_release_date).year() : null,
+    genres: game.genres, critic_rating: game.aggregated_rating, cover_url: game.cover_url,
   }
 
   return (
@@ -54,9 +56,9 @@ export default function FeaturedHero({ game }: { game: Game }) {
       <Box
         pos="absolute"
         inset={0}
-        bg={game.background_image ? undefined : 'dark.5'}
+        bg={game.cover_url ? undefined : 'dark.5'}
         style={{
-          backgroundImage: game.background_image ? `url("${game.background_image}")` : undefined,
+          backgroundImage: game.cover_url ? `url("${game.cover_url}")` : undefined,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           transform: hovered ? 'scale(1.03)' : 'none',
@@ -72,7 +74,7 @@ export default function FeaturedHero({ game }: { game: Game }) {
           {game.name}
         </Title>
         <Group gap="sm" mb="md" align="center">
-          <MetacriticBadge score={game.metacritic} />
+          <MetacriticBadge score={game.aggregated_rating} />
           <Text c="dark.2">·</Text>
           <Text c="dark.2" fz="sm">{game.genres.map((g) => g.name).join(' · ')}</Text>
         </Group>

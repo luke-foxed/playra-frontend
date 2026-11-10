@@ -1,5 +1,7 @@
-import { Box, SimpleGrid, Skeleton, AspectRatio, Group, Text, Button, Pagination } from "@mantine/core"
+import { Box, SimpleGrid, Skeleton, AspectRatio, Group, Text, Button, ActionIcon } from "@mantine/core"
+import dayjs from "dayjs"
 import GameCard from "./game_card"
+import { ChevronIcon, ChevronLeftIcon } from "../../shared/icons"
 import type { GamesResponse } from "../api/schemas"
 
 function SkeletonCard() {
@@ -25,14 +27,13 @@ type Props = {
   games: GamesResponse | undefined
   isFetching: boolean
   isLoading: boolean
-  totalPages: number
   currentPage: number
   wishlistedIds?: Set<number>
   onPageChange: (page: number) => void
   onClearAll: () => void
 }
 
-export default function GameGrid({ games, isFetching, isLoading, totalPages, currentPage, wishlistedIds, onPageChange, onClearAll }: Props) {
+export default function GameGrid({ games, isFetching, isLoading, currentPage, wishlistedIds, onPageChange, onClearAll }: Props) {
   if (isLoading) {
     return (
       <SimpleGrid cols={{ base: 2, xs: 3, sm: 3, md: 4, lg: 5 }} spacing="md">
@@ -60,11 +61,12 @@ export default function GameGrid({ games, isFetching, isLoading, totalPages, cur
               key={g.id}
               id={g.id}
               name={g.name}
-              imageUrl={g.background_image}
-              metacritic={g.metacritic}
-              released={g.released}
+              imageUrl={g.cover_url}
+              criticRating={g.aggregated_rating}
+              releaseYear={g.first_release_date != null ? dayjs.unix(g.first_release_date).year() : null}
+              isUpcoming={g.first_release_date != null && dayjs.unix(g.first_release_date).isAfter(dayjs(), 'day')}
               genres={g.genres.map((x) => x.name)}
-              platforms={g.platforms.map((x) => x.platform.slug)}
+              platforms={g.platforms.map((x) => x.abbreviation ?? x.name)}
               communityScore={g.playra_community_score}
               inWishlist={wishlistedIds?.has(g.id) ?? false}
             />
@@ -72,16 +74,17 @@ export default function GameGrid({ games, isFetching, isLoading, totalPages, cur
         </SimpleGrid>
       </Box>
 
-      {totalPages > 1 && (
-        <Group justify="center" mt={40}>
-          <Pagination
-            value={currentPage}
-            onChange={onPageChange}
-            total={totalPages}
-            siblings={1}
-            boundaries={1}
-            size="sm"
-          />
+      {/* IGDB doesn't give a cheap total count, so there's no fixed page total any
+          more -- prev/next driven by has_more instead of a numbered Pagination. */}
+      {(currentPage > 1 || games.has_more) && (
+        <Group justify="center" mt={40} gap="xs">
+          <ActionIcon variant="default" size="lg" radius="xl" disabled={currentPage <= 1} aria-label="Previous page" onClick={() => onPageChange(currentPage - 1)}>
+            <ChevronLeftIcon size={16} />
+          </ActionIcon>
+          <Text fz="sm" c="dark.2" ff="monospace" px={8}>Page {currentPage}</Text>
+          <ActionIcon variant="default" size="lg" radius="xl" disabled={!games.has_more} aria-label="Next page" onClick={() => onPageChange(currentPage + 1)}>
+            <ChevronIcon size={16} />
+          </ActionIcon>
         </Group>
       )}
     </>

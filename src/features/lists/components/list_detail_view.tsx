@@ -102,9 +102,10 @@ export default function ListDetailView({ detail, back, meta, actions, notice, on
                 <GameCard
                   id={g.game_id}
                   name={g.name}
-                  imageUrl={g.background_image}
-                  metacritic={g.metacritic}
-                  released={g.released}
+                  imageUrl={g.cover_url}
+                  criticRating={g.critic_rating}
+                  releaseYear={g.release_year}
+                  isUpcoming={g.release_year != null && g.release_year > new Date().getFullYear()}
                   genres={g.genres.map((x) => x.name)}
                   communityScore={g.user_rating ?? undefined}
                   showWish={false}
@@ -139,7 +140,7 @@ export default function ListDetailView({ detail, back, meta, actions, notice, on
 function ListHero({ detail }: { detail: ListDetail }) {
   const accent = LIST_ACCENT[detail.type]
   const collage = accent && !detail.cover_url
-    ? detail.games.filter((g) => g.background_image).slice(0, 5)
+    ? detail.games.filter((g) => g.cover_url).slice(0, 5)
     : []
 
   return (
@@ -156,7 +157,7 @@ function ListHero({ detail }: { detail: ListDetail }) {
                 key={g.game_id}
                 flex={1}
                 style={{
-                  backgroundImage: `url("${g.background_image}")`,
+                  backgroundImage: `url("${g.cover_url}")`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
                   filter: 'brightness(0.6) saturate(1.1)',

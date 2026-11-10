@@ -2,8 +2,10 @@
 import { queryOptions } from "@tanstack/react-query"
 import { isAxiosError } from "axios"
 import apiClient from "../../../lib/api_client"
-import { GameDetailSchema, GamesResponseSchema, UserGameSchema, ScreenshotsResponseSchema } from "./schemas"
-import type { GameDetail, GamesResponse, GetGamesParams, UserGame, Game, ScreenshotsResponse } from "./schemas"
+import { GameDetailSchema, GamesResponseSchema, UserGameSchema, ScreenshotsResponseSchema, GameRelatedResponseSchema } from "./schemas"
+import type { GameDetail, GamesResponse, GetGamesParams, UserGame, ScreenshotsResponse, GameRelated } from "./schemas"
+
+const EMPTY_RELATED: GameRelated = { collection_name: null, collection_games: [], similar_games: [] }
 
 export async function getGames(params?: GetGamesParams): Promise<GamesResponse> {
   const { data: response } = await apiClient.get("/v1/games", { params })
@@ -30,32 +32,18 @@ export async function getUserGame(id: number): Promise<UserGame> {
   return UserGameSchema.parse(response.data)
 }
 
-export async function getGameSeries(id: number): Promise<Game[]> {
+// IGDB's collection (franchise) + similar_games, replacing RAWG's flat "game series"
+// list. The backend already resolves both in one call -- no client-side padding
+// algorithm needed any more.
+export async function getGameRelated(id: number): Promise<GameRelated> {
   try {
-    const { data: response } = await apiClient.get(`/v1/games/${id}/game-series`)
-    const parsed = GamesResponseSchema.safeParse(response.data)
-    return parsed.success ? parsed.data.results : []
+    const { data: response } = await apiClient.get(`/v1/games/${id}/related`)
+    const parsed = GameRelatedResponseSchema.safeParse(response.data)
+    return parsed.success ? parsed.data : EMPTY_RELATED
   } catch (error) {
-    // not every game has a series; anything else (network, 5xx) is a real failure
-    if (isAxiosError(error) && error.response?.status === 404) return []
+    if (isAxiosError(error) && error.response?.status === 404) return EMPTY_RELATED
     throw error
   }
-}
-
-export async function getSimilarGames(id: number, game: GameDetail): Promise<Game[]> {
-  const TARGET = 10
-
-  const series = (await getGameSeries(id)).filter((g) => g.id !== id)
-  if (series.length >= TARGET) return series.slice(0, TARGET)
-
-  const needed = TARGET - series.length
-  const exclude = new Set([id, ...series.map((g) => g.id)])
-  const genreId = game.genres[0]?.id
-  if (!genreId) return series
-
-  const data = await getGames({ page: 1, page_size: needed + 8, genres: String(genreId), ordering: '-metacritic' })
-  const filler = data.results.filter((g) => !exclude.has(g.id)).slice(0, needed)
-  return [...series, ...filler]
 }
 
 export async function getGameScreenshots(id: number): Promise<ScreenshotsResponse> {
@@ -95,10 +83,10 @@ export const recentGamesQueryOptions = (page_size = 10) =>
     staleTime: 5 * 60 * 1000,
   })
 
-export const similarGamesQueryOptions = (id: number, game: GameDetail) =>
+export const gameRelatedQueryOptions = (id: number) =>
   queryOptions({
-    queryKey: ["games", "similar", id],
-    queryFn: () => getSimilarGames(id, game),
+    queryKey: ["games", "related", id],
+    queryFn: () => getGameRelated(id),
     staleTime: 5 * 60 * 1000,
   })
 

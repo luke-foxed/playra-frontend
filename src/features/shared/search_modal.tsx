@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useDebouncedValue } from '@mantine/hooks'
 import { Modal, Box, Text, Group, Loader, Stack, Skeleton, Input, ActionIcon, Kbd, Flex, Center, UnstyledButton } from '@mantine/core'
 import { useNavigate } from '@tanstack/react-router'
+import dayjs from 'dayjs'
 import { useQuery } from '@tanstack/react-query'
 import { getGames, popularGamesQueryOptions } from '../../features/games/api/games'
 import MetacriticBadge from './metacritic_badge'
@@ -149,7 +150,7 @@ function SearchResultRow({ game, active, onSelect, onHover }: { game: Game; acti
         bdrs={8}
         bg="dark.5"
         style={{
-          backgroundImage: game.background_image ? `url("${game.background_image}")` : undefined,
+          backgroundImage: game.cover_url ? `url("${game.cover_url}")` : undefined,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)',
@@ -157,9 +158,9 @@ function SearchResultRow({ game, active, onSelect, onHover }: { game: Game; acti
       />
       <Box miw={0}>
         <Text fz="sm" fw={600} c="dark.0" truncate style={{ letterSpacing: -0.3 }}>{game.name}</Text>
-        <Text fz="xs" c="dark.2" truncate>{game.released?.slice(0, 4)} · {game.genres.map((x) => x.name).join(', ')}</Text>
+        <Text fz="xs" c="dark.2" truncate>{game.first_release_date != null ? dayjs.unix(game.first_release_date).year() : ''} · {game.genres.map((x) => x.name).join(', ')}</Text>
       </Box>
-      <MetacriticBadge score={game.metacritic} size={32} />
+      <MetacriticBadge score={game.aggregated_rating} size={32} />
       <ChevronIcon size={16} style={{ color: 'var(--mantine-color-dark-3)' }} />
     </UnstyledButton>
   )

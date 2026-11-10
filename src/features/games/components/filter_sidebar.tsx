@@ -27,7 +27,7 @@ type SectionsProps = {
   localFrom: string
   localTo: string
   onStatusChange: (s: Status) => void
-  onGenreToggle: (slug: string) => void
+  onGenreToggle: (id: string) => void
   onPlatformToggle: (id: string) => void
   onMinScoreChange: (val: number) => void
   onLocalRangeChange: (from: string, to: string) => void
@@ -55,7 +55,7 @@ function FilterSections({
       <FilterSection label="Genre">
         <Flex wrap="wrap" gap="7px 6px">
           {genres.map((g) => (
-            <Chip key={g.slug} checked={currentGenres.includes(g.slug)} onChange={() => onGenreToggle(g.slug)}>{g.name}</Chip>
+            <Chip key={g.id} checked={currentGenres.includes(String(g.id))} onChange={() => onGenreToggle(String(g.id))}>{g.name}</Chip>
           ))}
         </Flex>
       </FilterSection>
@@ -127,7 +127,7 @@ type Props = {
   dateFrom: string
   dateTo: string
   onStatusChange: (s: Status) => void
-  onGenreToggle: (slug: string) => void
+  onGenreToggle: (id: string) => void
   onPlatformToggle: (id: string) => void
   onMinScoreChange: (val: number) => void
   onDateRangeChange: (from: string, to: string) => void

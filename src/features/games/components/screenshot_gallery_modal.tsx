@@ -2,12 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import { useHotkeys, useMediaQuery } from '@mantine/hooks'
 import { ActionIcon, Box, Group, Image, Modal, ScrollArea, Text } from '@mantine/core'
 import { ChevronIcon, ChevronLeftIcon, PhotoIcon, XIcon } from '../../shared/icons'
-import type { Screenshot } from './screenshot_strip'
 
 type Props = {
   opened: boolean
   onClose: () => void
-  screenshots: Screenshot[]
+  screenshots: string[]
   initialIndex: number
   gameName: string
 }
@@ -90,7 +89,7 @@ export default function ScreenshotGalleryModal({ opened, onClose, screenshots, i
 
       <Box pos="relative" p="md" pb={multiple ? 'sm' : 'md'}>
         <Box w="100%" bdrs="md" bg="dark.8" style={{ aspectRatio: '16/9', overflow: 'hidden' }}>
-          <Image src={current.image} alt={`${gameName} screenshot ${index + 1}`} w="100%" h="100%" fit="contain" />
+          <Image src={current} alt={`${gameName} screenshot ${index + 1}`} w="100%" h="100%" fit="contain" />
         </Box>
         {multiple && (
           <>
@@ -103,9 +102,9 @@ export default function ScreenshotGalleryModal({ opened, onClose, screenshots, i
       {multiple && (
         <ScrollArea type="hover" scrollbarSize={4}>
           <Group gap={6} wrap="nowrap" px="md" pb="md">
-            {screenshots.map((shot, i) => (
+            {screenshots.map((url, i) => (
               <Box
-                key={shot.id}
+                key={url}
                 ref={i === index ? thumbRef : undefined}
                 onClick={() => setIndex(i)}
                 w={72}
@@ -121,7 +120,7 @@ export default function ScreenshotGalleryModal({ opened, onClose, screenshots, i
                   transition: 'opacity 0.15s, outline-color 0.1s',
                 }}
               >
-                <Image src={shot.image} alt="" w="100%" h="100%" fit="cover" />
+                <Image src={url} alt="" w="100%" h="100%" fit="cover" />
               </Box>
             ))}
           </Group>

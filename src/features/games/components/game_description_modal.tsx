@@ -21,12 +21,12 @@ export default function GameDescriptionModal({ game, opened, onClose }: Props) {
     >
       {/* Blurred cover banner */}
       <Box pos="relative" h={160} style={{ overflow: 'hidden', flexShrink: 0 }}>
-        {game.background_image && (
+        {game.cover_url && (
           <Box
             pos="absolute"
             inset={0}
             style={{
-              backgroundImage: `url("${game.background_image}")`,
+              backgroundImage: `url("${game.cover_url}")`,
               backgroundSize: 'cover',
               backgroundPosition: 'center top',
               filter: 'blur(6px) brightness(0.35)',
@@ -61,7 +61,7 @@ export default function GameDescriptionModal({ game, opened, onClose }: Props) {
 
       <ScrollArea.Autosize mah={420}>
         <Box p="xl" pt="lg">
-          <Text c="dark.1" fz="sm" lh={1.8} style={{ whiteSpace: 'pre-line' }}>{game.description_raw}</Text>
+          <Text c="dark.1" fz="sm" lh={1.8} style={{ whiteSpace: 'pre-line' }}>{game.summary}</Text>
         </Box>
       </ScrollArea.Autosize>
     </Modal>

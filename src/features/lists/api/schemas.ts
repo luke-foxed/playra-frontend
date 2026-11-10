@@ -1,15 +1,15 @@
 import { z } from "zod"
-import { GenreSchema } from "../../games/api/schemas"
+import { GameGenreSchema } from "../../games/api/schemas"
 
 export const ListTypeSchema = z.enum(["wishlist", "ratings", "custom"]).catch("custom")
 
 export const ListGameSchema = z.object({
   game_id: z.number(),
   name: z.string(),
-  released: z.string().nullable().catch(null),
-  genres: z.array(GenreSchema).catch([]),
-  metacritic: z.number().nullable().catch(null),
-  background_image: z.string().nullable().catch(null),
+  release_year: z.number().nullable().catch(null),
+  genres: z.array(GameGenreSchema).catch([]),
+  critic_rating: z.number().nullable().catch(null),
+  cover_url: z.string().nullable().catch(null),
   user_rating: z.number().nullable().optional(),
   added_at: z.string().nullable().optional(),
 })

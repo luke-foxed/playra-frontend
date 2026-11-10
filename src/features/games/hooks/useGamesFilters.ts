@@ -3,26 +3,26 @@ import dayjs from "dayjs"
 import type { GetGamesParams } from "../api/schemas"
 import type { Status } from "../constants"
 
-const OLDEST = "1970-01-01"
-const FAR_FUTURE = "2030-12-31"
-
 export function useGamesFilters(search: GetGamesParams) {
   const navigate = useNavigate({ from: "/games/" })
   const patch = (partial: Partial<GetGamesParams>) =>
     navigate({ search: (prev) => ({ ...prev, ...partial, page: 1 }) })
 
-  const today = dayjs().format("YYYY-MM-DD")
-  const tomorrow = dayjs().add(1, "day").format("YYYY-MM-DD")
+  const currentYear = dayjs().year()
 
-  const minScore = search.metacritic ? parseInt(search.metacritic.split(",")[0]) : 0
+  const minScore = search.rating_min ?? 0
   const currentGenres = search.genres ? search.genres.split(",") : []
-  const currentPlatforms = search.parent_platforms ? search.parent_platforms.split(",") : []
+  const currentPlatforms = search.platforms ? search.platforms.split(",") : []
 
-  const isReleasedPreset = search.dates === `${OLDEST},${today}`
-  const isUpcomingPreset = search.dates === `${tomorrow},${FAR_FUTURE}`
+  // IGDB's filters only go down to year granularity (no day-level dates), so these
+  // presets are coarser than RAWG's day-precision "released"/"upcoming": a game
+  // releasing later this year still counts as "released" here.
+  const isReleasedPreset = search.release_year_max === currentYear && search.release_year_min == null
+  const isUpcomingPreset = search.release_year_min === currentYear && search.release_year_max == null
   const currentStatus: Status = isReleasedPreset ? "released" : isUpcomingPreset ? "upcoming" : "all"
-  const hasCustomDateRange = !!search.dates && !isReleasedPreset && !isUpcomingPreset
-  const [dateFrom = "", dateTo = ""] = hasCustomDateRange ? (search.dates ?? "").split(",").map((d) => d.slice(0, 4)) : []
+  const hasCustomDateRange = !isReleasedPreset && !isUpcomingPreset && (search.release_year_min != null || search.release_year_max != null)
+  const dateFrom = hasCustomDateRange && search.release_year_min != null ? String(search.release_year_min) : ""
+  const dateTo = hasCustomDateRange && search.release_year_max != null ? String(search.release_year_max) : ""
 
   const activeFilterCount =
     (currentStatus !== "all" ? 1 : 0) +
@@ -42,18 +42,24 @@ export function useGamesFilters(search: GetGamesParams) {
     dateFrom,
     dateTo,
     onStatusChange: (status: Status) =>
-      patch({ dates: status === "released" ? `${OLDEST},${today}` : status === "upcoming" ? `${tomorrow},${FAR_FUTURE}` : undefined }),
-    onGenreToggle: (slug: string) => {
-      const next = toggle(currentGenres, slug)
+      patch({
+        release_year_min: status === "upcoming" ? currentYear : undefined,
+        release_year_max: status === "released" ? currentYear : undefined,
+      }),
+    onGenreToggle: (id: string) => {
+      const next = toggle(currentGenres, id)
       patch({ genres: next.length ? next.join(",") : undefined })
     },
     onPlatformToggle: (id: string) => {
       const next = toggle(currentPlatforms, id)
-      patch({ parent_platforms: next.length ? next.join(",") : undefined })
+      patch({ platforms: next.length ? next.join(",") : undefined })
     },
-    onMinScoreChange: (val: number) => patch({ metacritic: val ? `${val},100` : undefined }),
+    onMinScoreChange: (val: number) => patch({ rating_min: val || undefined }),
     onDateRangeChange: (from: string, to: string) =>
-      patch({ dates: from || to ? `${from ? `${from}-01-01` : OLDEST},${to ? `${to}-12-31` : FAR_FUTURE}` : undefined }),
+      patch({
+        release_year_min: from ? parseInt(from) : undefined,
+        release_year_max: to ? parseInt(to) : undefined,
+      }),
   }
 
   return {
