@@ -1,4 +1,4 @@
-import { Box, Chip, Flex, Group, Text, Slider } from "@mantine/core"
+import { Anchor, Box, Chip, Flex, Group, Text, Slider } from "@mantine/core"
 import type { MantineBreakpoint } from "@mantine/core"
 import { YearPickerInput } from "@mantine/dates"
 import { useState } from "react"
@@ -6,6 +6,7 @@ import { useDebouncedCallback } from "@mantine/hooks"
 import { PLATFORMS } from "../constants"
 import type { Status } from "../constants"
 import useGetGenres from "../hooks/useGetGenres"
+import useGetPlatforms from "../hooks/useGetPlatforms"
 
 function FilterSection({ label, children, py = [20, 20] }: { label: React.ReactNode; children: React.ReactNode; py?: [number, number] }) {
   return (
@@ -39,6 +40,11 @@ function FilterSections({
   onLocalRangeChange,
 }: SectionsProps) {
   const { data: genres = [] } = useGetGenres()
+  const [showAllPlatforms, setShowAllPlatforms] = useState(false)
+  const { data: allPlatforms, isFetching: platformsLoading, refetch: fetchAllPlatforms } = useGetPlatforms()
+
+  const curatedIds = new Set(PLATFORMS.map((p) => p.id))
+  const extraPlatforms = (allPlatforms ?? []).filter((p) => !curatedIds.has(String(p.id)))
 
   return (
     <>
@@ -65,7 +71,29 @@ function FilterSections({
           {PLATFORMS.map((p) => (
             <Chip key={p.id} checked={currentPlatforms.includes(p.id)} onChange={() => onPlatformToggle(p.id)}>{p.label}</Chip>
           ))}
+          {showAllPlatforms && extraPlatforms.map((p) => (
+            <Chip key={p.id} checked={currentPlatforms.includes(String(p.id))} onChange={() => onPlatformToggle(String(p.id))}>
+              {p.abbreviation ?? p.name}
+            </Chip>
+          ))}
         </Flex>
+        {!showAllPlatforms ? (
+          <Anchor
+            component="button"
+            type="button"
+            fz="xs"
+            c="violet.4"
+            fw={500}
+            mt={10}
+            onClick={() => { setShowAllPlatforms(true); fetchAllPlatforms() }}
+          >
+            {platformsLoading ? "Loading…" : "Show all platforms"}
+          </Anchor>
+        ) : (
+          <Anchor component="button" type="button" fz="xs" c="dark.2" fw={500} mt={10} onClick={() => setShowAllPlatforms(false)}>
+            Show fewer
+          </Anchor>
+        )}
       </FilterSection>
 
       <FilterSection label={`Min critic score${minScore ? ` · ${minScore}` : ""}`} py={[20, 26]}>

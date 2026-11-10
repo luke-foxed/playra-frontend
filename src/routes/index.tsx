@@ -48,8 +48,17 @@ function RouteComponent() {
 
   const popular = popularData.results
   const fresh = recentData.results
-  const topRated = topData.results.filter((g) => g.aggregated_rating != null).slice(0, 8)
-  const featured = fresh[0]
+  // Backend now requires a minimum rating count + cover art for rating-sorted
+  // results, so no client-side quality filter is needed here any more --
+  // that used to cut an 8-game request down to as few as 4.
+  const topRated = topData.results.slice(0, 8)
+  // "Most recent" alone surfaces whatever shipped today, however obscure. Pick
+  // the best-known game among the recent releases instead (most rated), so the
+  // featured slot is something a visitor would actually recognize.
+  const featured = fresh.reduce<Game | undefined>(
+    (best, g) => (g.total_rating_count ?? 0) > (best?.total_rating_count ?? -1) ? g : best,
+    undefined,
+  ) ?? fresh[0]
 
   const browse = <BrowseAll onClick={() => navigate({ to: '/games', search: { page: 1, page_size: 20 } })} />
 

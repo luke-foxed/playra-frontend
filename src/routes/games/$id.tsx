@@ -62,8 +62,10 @@ function RouteComponent() {
     cover_url: game.cover_url,
   }
 
-  // IGDB's cover is the only hero/poster image now -- RAWG's separate
-  // background_image_additional banner has no equivalent, so it's used for both.
+  // The poster uses the (portrait) cover; the wide hero banner prefers IGDB's
+  // artwork (purpose-built wide images) and only falls back to a stretched
+  // cover when a game has none.
+  const heroImage = game.artwork_url ?? game.cover_url
   const allScreenshots = [game.cover_url, ...game.screenshot_urls].filter((u): u is string => !!u)
 
   const inLists = userGame.lists ?? []
@@ -71,7 +73,7 @@ function RouteComponent() {
   return (
     <Box>
       <Box pos="relative" h={{ base: 220, sm: 340 }}>
-        <BackgroundImage src={game.cover_url ?? ""} pos="absolute" inset={0}>
+        <BackgroundImage src={heroImage ?? ""} pos="absolute" inset={0}>
           <Box
             pos="absolute"
             inset={0}

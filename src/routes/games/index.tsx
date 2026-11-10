@@ -22,8 +22,13 @@ export const Route = createFileRoute("/games/")({
 
 function RouteComponent() {
   const search = Route.useSearch()
+  // The sort dropdown always shows a selection ("Most popular" when the URL has
+  // no ordering param) -- the actual request needs to match that, or the first
+  // page load returns IGDB's unsorted default order while the dropdown implies
+  // it's sorted by popularity.
+  const effectiveSearch = { ...search, ordering: search.ordering ?? "-total_rating_count" as const }
   const { data: games, isFetching, isLoading } = useQuery({
-    ...gamesQueryOptions(search),
+    ...gamesQueryOptions(effectiveSearch),
     placeholderData: keepPreviousData,
   })
   const { wishlistedIds } = useUserLibrary()

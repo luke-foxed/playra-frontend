@@ -34,6 +34,7 @@ export const GameDetailSchema = GameSchema.extend({
   developers: z.array(z.string()).catch([]),
   publishers: z.array(z.string()).catch([]),
   screenshot_urls: z.array(z.string()).catch([]),
+  artwork_url: z.string().nullable().optional(), // wide hero image; falls back to cover_url
   website: z.string().nullable().optional(),
 })
 
