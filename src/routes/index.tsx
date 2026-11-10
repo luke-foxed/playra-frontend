@@ -125,7 +125,10 @@ function TopRatedRow({ game, rank }: { game: Game; rank: number }) {
           w={56}
           h={56}
           bdrs={9}
-          bg="dark.5"
+          // Mantine's `bg` compiles to the `background` shorthand, which resets
+          // `background-image` -- so it can only be set when there's no cover,
+          // never alongside one (this silently blanked every thumbnail here).
+          bg={game.cover_url ? undefined : 'dark.5'}
           c="dark.3"
           display="grid"
           style={{
