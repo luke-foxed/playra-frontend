@@ -193,12 +193,12 @@ function RouteComponent() {
 
 const coverShadow = { boxShadow: "0 24px 60px -20px rgba(0,0,0,.8), inset 0 0 0 1px rgba(255,255,255,0.14)" }
 
-function relatedCardProps(g: RelatedGame, rating: number | null = null) {
+function relatedCardProps(g: RelatedGame) {
   return {
     id: g.id,
     name: g.name ?? "",
     imageUrl: g.cover_url,
-    criticRating: rating,
+    criticRating: g.aggregated_rating ?? null,
     releaseYear: g.first_release_date != null ? dayjs.unix(g.first_release_date).year() : null,
     isUpcoming: g.first_release_date != null && dayjs.unix(g.first_release_date).isAfter(dayjs(), 'day'),
     genres: g.genres.map((x) => x.name),
@@ -239,7 +239,7 @@ function RelatedGames({ gameId }: { gameId: number }) {
             {related.similar_games.map((g) => (
               <GameCard
                 key={g.id}
-                {...relatedCardProps(g, g.total_rating ?? null)}
+                {...relatedCardProps(g)}
                 inWishlist={wishlistedIds.has(g.id)}
                 userScore={userRatings.get(g.id) ?? null}
               />
