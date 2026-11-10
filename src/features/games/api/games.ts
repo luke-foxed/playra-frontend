@@ -1,4 +1,3 @@
-
 import { queryOptions } from "@tanstack/react-query"
 import { isAxiosError } from "axios"
 import apiClient from "../../../lib/api_client"
@@ -32,9 +31,6 @@ export async function getUserGame(id: number): Promise<UserGame> {
   return UserGameSchema.parse(response.data)
 }
 
-// IGDB's collection (franchise) + similar_games, replacing RAWG's flat "game series"
-// list. The backend already resolves both in one call -- no client-side padding
-// algorithm needed any more.
 export async function getGameRelated(id: number): Promise<GameRelated> {
   try {
     const { data: response } = await apiClient.get(`/v1/games/${id}/related`)
@@ -49,10 +45,6 @@ export async function getGameRelated(id: number): Promise<GameRelated> {
 export async function getGameScreenshots(id: number): Promise<ScreenshotsResponse> {
   const { data: response } = await apiClient.get(`/v1/games/${id}/screenshots`)
   return ScreenshotsResponseSchema.parse(response.data)
-}
-
-export async function submitReview(gameId: number, score: number): Promise<void> {
-  await apiClient.post(`/v1/games/${gameId}/reviews`, { score })
 }
 
 export const gameQueryOptions = (id: number) =>

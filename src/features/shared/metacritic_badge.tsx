@@ -34,7 +34,7 @@ export default function MetacriticBadge({ score, size = 40 }: Props) {
     )
   }
 
-  const { bg } = score >= 88 ? metascore.great : score >= 70 ? metascore.ok : metascore.poor
+  const { bg } = score >= 85 ? metascore.great : score >= 70 ? metascore.ok : metascore.poor
 
   return (
     <Box style={{

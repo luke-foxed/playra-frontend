@@ -14,8 +14,7 @@ import { useUserLibrary } from '../features/games/hooks/useUserLibrary'
 import { FireIcon, SparkleIcon, StarIcon, ChevronIcon, GamepadIcon } from '../features/shared/icons'
 import SectionHeading from '../features/shared/section_heading'
 
-// Sorted by aggregated_rating (critic score) -- the backend requires a minimum
-// review count for this ordering, so every result here has a real score.
+// Backend enforces a minimum review count for this ordering, so every result has a real score.
 const TOP = { page: 1, page_size: 8, ordering: '-aggregated_rating' as const }
 
 export const Route = createFileRoute('/')({
@@ -47,13 +46,9 @@ function RouteComponent() {
 
   const popular = popularData.results
   const fresh = recentData.results
-  // Backend now requires a minimum rating count + cover art for rating-sorted
-  // results, so no client-side quality filter is needed here any more --
-  // that used to cut an 8-game request down to as few as 4.
   const topRated = topData.results.slice(0, 8)
-  // "Most recent" alone surfaces whatever shipped today, however obscure. Pick
-  // the best-known game among the recent releases instead (most rated), so the
-  // featured slot is something a visitor would actually recognize.
+  // Pick the best-known (most-rated) recent release, not just the newest, so
+  // the featured slot is something a visitor would actually recognize.
   const featured = fresh.reduce<Game | undefined>(
     (best, g) => (g.total_rating_count ?? 0) > (best?.total_rating_count ?? -1) ? g : best,
     undefined,
@@ -125,9 +120,6 @@ function TopRatedRow({ game, rank }: { game: Game; rank: number }) {
           w={56}
           h={56}
           bdrs={9}
-          // Mantine's `bg` compiles to the `background` shorthand, which resets
-          // `background-image` -- so it can only be set when there's no cover,
-          // never alongside one (this silently blanked every thumbnail here).
           bg={game.cover_url ? undefined : 'dark.5'}
           c="dark.3"
           display="grid"

@@ -148,8 +148,6 @@ function SearchResultRow({ game, active, onSelect, onHover }: { game: Game; acti
         w={44}
         h={44}
         bdrs={8}
-        // `bg` compiles to the `background` shorthand, which resets
-        // background-image -- only set it when there's no cover to show.
         bg={game.cover_url ? undefined : 'dark.5'}
         style={{
           backgroundImage: game.cover_url ? `url("${game.cover_url}")` : undefined,

@@ -14,9 +14,8 @@ export function useGamesFilters(search: GetGamesParams) {
   const currentGenres = search.genres ? search.genres.split(",") : []
   const currentPlatforms = search.platforms ? search.platforms.split(",") : []
 
-  // IGDB's filters only go down to year granularity (no day-level dates), so these
-  // presets are coarser than RAWG's day-precision "released"/"upcoming": a game
-  // releasing later this year still counts as "released" here.
+  // IGDB's filters only go down to year granularity -- a game releasing later
+  // this year still counts as "released" here.
   const isReleasedPreset = search.release_year_max === currentYear && search.release_year_min == null
   const isUpcomingPreset = search.release_year_min === currentYear && search.release_year_max == null
   const currentStatus: Status = isReleasedPreset ? "released" : isUpcomingPreset ? "upcoming" : "all"

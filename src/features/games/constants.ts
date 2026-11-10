@@ -4,9 +4,6 @@ export const SORT_OPTIONS: { group: string; items: { value: string; label: strin
     items: [{ value: "-total_rating_count", label: "Most popular" }],
   },
   {
-    // Sorted by aggregated_rating (critic score) -- the backend requires a
-    // minimum review count for this ordering, so it doesn't surface a game
-    // sitting at a lucky 100 off one or two reviews.
     group: "Rating",
     items: [
       { value: "-aggregated_rating", label: "Highest rated" },
@@ -29,8 +26,7 @@ export const SORT_OPTIONS: { group: string; items: { value: string; label: strin
   },
 ]
 
-// IGDB platform ids (from its platforms taxonomy) -- a curated shortlist for the
-// filter sidebar, same role as the old RAWG parent-platform ids.
+// IGDB platform ids -- curated shortlist for the filter sidebar.
 export const PLATFORMS = [
   { label: "PC", id: "6" },
   { label: "PS5", id: "167" },

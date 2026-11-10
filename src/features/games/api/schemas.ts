@@ -87,15 +87,12 @@ export const ScreenshotsResponseSchema = z.object({
 
 export type ScreenshotsResponse = z.infer<typeof ScreenshotsResponseSchema>
 
-// Replaces RAWG's flat "game series" list. IGDB's collection (franchise) and
-// similar_games don't map 1:1 to a single games list.
 export const RelatedGameSchema = z.object({
   id: z.number(),
   name: z.string().nullable(),
   slug: z.string().nullable(),
   cover_url: z.string().nullable(),
   first_release_date: z.number().nullable(),
-  total_rating: z.number().nullable().optional(),
   aggregated_rating: z.number().nullable().optional(),
   genres: z.array(GameGenreSchema).catch([]),
 })

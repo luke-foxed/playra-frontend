@@ -85,8 +85,6 @@ export default function GamePickerModal({ listId, currentGameIds, onClose, onRef
                     w={34}
                     h={44}
                     bdrs={6}
-                    // `bg` compiles to the `background` shorthand, which resets
-                    // background-image -- only set it when there's no cover.
                     bg={g.cover_url ? undefined : 'dark.5'}
                     style={{
                       flexShrink: 0,

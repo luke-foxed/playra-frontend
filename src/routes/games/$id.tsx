@@ -62,9 +62,7 @@ function RouteComponent() {
     cover_url: game.cover_url,
   }
 
-  // The poster uses the (portrait) cover; the wide hero banner prefers IGDB's
-  // artwork (purpose-built wide images) and only falls back to a stretched
-  // cover when a game has none.
+  // Wide artwork over the portrait cover for the hero banner.
   const heroImage = game.artwork_url ?? game.cover_url
   const allScreenshots = [game.cover_url, ...game.screenshot_urls].filter((u): u is string => !!u)
 
@@ -205,9 +203,8 @@ function relatedCardProps(g: RelatedGame) {
   }
 }
 
-// Replaces RAWG's "game series" section. IGDB has no single flat list here --
-// a game's franchise (collection) and its separately-ranked similar_games are two
-// distinct concepts, so they render as two sections when present.
+// Collection (franchise) and similar_games are separate IGDB concepts, so they
+// render as two sections when present.
 function RelatedGames({ gameId }: { gameId: number }) {
   const { data: related } = useQuery(gameRelatedQueryOptions(gameId))
   const { wishlistedIds, userRatings } = useUserLibrary()
