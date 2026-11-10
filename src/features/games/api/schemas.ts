@@ -20,6 +20,7 @@ export const GameSchema = z.object({
   summary: z.string().nullable().optional(),
   first_release_date: z.number().nullable(), // unix timestamp
   cover_url: z.string().nullable(),
+  artwork_url: z.string().nullable().optional(), // wide hero image; falls back to cover_url
   rating: z.number().nullable(),              // 0-100, IGDB user rating
   aggregated_rating: z.number().nullable(),   // 0-100, critic score
   total_rating: z.number().nullable(),        // 0-100, blended
@@ -34,7 +35,6 @@ export const GameDetailSchema = GameSchema.extend({
   developers: z.array(z.string()).catch([]),
   publishers: z.array(z.string()).catch([]),
   screenshot_urls: z.array(z.string()).catch([]),
-  artwork_url: z.string().nullable().optional(), // wide hero image; falls back to cover_url
   website: z.string().nullable().optional(),
 })
 

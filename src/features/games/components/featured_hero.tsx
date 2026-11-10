@@ -41,6 +41,9 @@ function WishlistButton({ game }: { game: Game }) {
 export default function FeaturedHero({ game }: { game: Game }) {
   const navigate = useNavigate()
   const { hovered, ref } = useHover<HTMLDivElement>()
+  // The cover is a portrait box-art image -- stretched across this wide banner
+  // it looks low-res. IGDB's artwork image is purpose-built widescreen.
+  const heroImage = game.artwork_url ?? game.cover_url
 
   return (
     <Box
@@ -56,9 +59,9 @@ export default function FeaturedHero({ game }: { game: Game }) {
       <Box
         pos="absolute"
         inset={0}
-        bg={game.cover_url ? undefined : 'dark.5'}
+        bg={heroImage ? undefined : 'dark.5'}
         style={{
-          backgroundImage: game.cover_url ? `url("${game.cover_url}")` : undefined,
+          backgroundImage: heroImage ? `url("${heroImage}")` : undefined,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           transform: hovered ? 'scale(1.03)' : 'none',

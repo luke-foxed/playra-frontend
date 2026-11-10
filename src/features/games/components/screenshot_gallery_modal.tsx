@@ -68,8 +68,8 @@ export default function ScreenshotGalleryModal({ opened, onClose, screenshots, i
       padding={0}
       withCloseButton={false}
       styles={{
-        content: { background: 'rgba(8,10,18,0.97)', backdropFilter: 'blur(24px)' },
-        body: { padding: 0 },
+        content: { background: 'rgba(8,10,18,0.97)', backdropFilter: 'blur(24px)', overflow: 'hidden' },
+        body: { padding: 0, overflow: 'hidden' },
         header: { display: 'none' },
       }}
       radius="lg"
@@ -88,7 +88,17 @@ export default function ScreenshotGalleryModal({ opened, onClose, screenshots, i
       </Group>
 
       <Box pos="relative" p="md" pb={multiple ? 'sm' : 'md'}>
-        <Box w="100%" bdrs="md" bg="dark.8" style={{ aspectRatio: '16/9', overflow: 'hidden' }}>
+        {/* Capped to a viewport-relative max-height, not just an aspect ratio --
+            on shorter screens a full-width 16:9 box plus the header and thumbnail
+            strip below it added up to taller than the viewport, which made the
+            Modal's outer container scrollable. */}
+        <Box
+          w="100%"
+          mah={multiple ? '65vh' : '78vh'}
+          bdrs="md"
+          bg="dark.8"
+          style={{ aspectRatio: '16/9', overflow: 'hidden' }}
+        >
           <Image src={current} alt={`${gameName} screenshot ${index + 1}`} w="100%" h="100%" fit="contain" />
         </Box>
         {multiple && (

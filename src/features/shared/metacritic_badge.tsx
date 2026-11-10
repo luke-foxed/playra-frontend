@@ -44,7 +44,7 @@ export default function MetacriticBadge({ score, size = 40 }: Props) {
       color: bg,
     }}>
       <MetacriticIcon size={Math.round(size * 0.42)} />
-      {score}
+      {Math.round(score)}
     </Box>
   )
 }
