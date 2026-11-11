@@ -1,21 +1,33 @@
-import { Anchor, Box, Chip, Flex, Group, Text, Slider } from "@mantine/core"
+import { Anchor, Box, Chip, Collapse, Flex, Group, Text, Slider, UnstyledButton } from "@mantine/core"
 import type { MantineBreakpoint } from "@mantine/core"
 import { YearPickerInput } from "@mantine/dates"
 import { useState } from "react"
 import { useDebouncedCallback } from "@mantine/hooks"
-import { PLATFORMS } from "../constants"
+import { PLATFORMS, EXPANDED_PLATFORM_IDS } from "../constants"
 import type { Status } from "../constants"
+import { ChevronIcon } from "../../shared/icons"
 import useGetGenres from "../hooks/useGetGenres"
 import useGetPlatforms from "../hooks/useGetPlatforms"
 
-function FilterSection({ label, children, py = [20, 20] }: { label: React.ReactNode; children: React.ReactNode; py?: [number, number] }) {
+function FilterSection({
+  label, summary, children, py = [20, 20], defaultOpen = true,
+}: { label: React.ReactNode; summary?: string; children: React.ReactNode; py?: [number, number]; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen)
   return (
     <Box px={18} pt={py[0]} pb={py[1]} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-      <Group gap={9} mb={12} align="center">
-        <Box w={3} h={13} bdrs={2} bg="#7355E8" style={{ flexShrink: 0 }} />
-        <Text fz="sm" tt="uppercase" fw={700} c="#8B8EB8" style={{ letterSpacing: 1.2 }}>{label}</Text>
-      </Group>
-      {children}
+      <UnstyledButton onClick={() => setOpen((o) => !o)} style={{ width: '100%' }}>
+        <Group justify="space-between" align="center" wrap="nowrap" gap={8} mb={open ? 12 : 0}>
+          <Group gap={9} align="center" wrap="nowrap" style={{ minWidth: 0 }}>
+            <Box w={3} h={13} bdrs={2} bg="#7355E8" style={{ flexShrink: 0 }} />
+            <Text fz="sm" tt="uppercase" fw={700} c="#8B8EB8" style={{ letterSpacing: 1.2 }}>{label}</Text>
+          </Group>
+          <Group gap={6} wrap="nowrap" style={{ flexShrink: 0 }}>
+            {summary && <Text fz="xs" c="dark.2" truncate maw={110}>{summary}</Text>}
+            <ChevronIcon size={11} style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease', flexShrink: 0 }} />
+          </Group>
+        </Group>
+      </UnstyledButton>
+      <Collapse expanded={open}>{children}</Collapse>
     </Box>
   )
 }
@@ -44,11 +56,29 @@ function FilterSections({
   const { data: allPlatforms, isFetching: platformsLoading, refetch: fetchAllPlatforms } = useGetPlatforms()
 
   const curatedIds = new Set(PLATFORMS.map((p) => p.id))
-  const extraPlatforms = (allPlatforms ?? []).filter((p) => !curatedIds.has(String(p.id)))
+  const extraPlatforms = (allPlatforms ?? []).filter((p) => !curatedIds.has(String(p.id)) && EXPANDED_PLATFORM_IDS.has(String(p.id)))
+
+  const platformLabel = (id: string) =>
+    PLATFORMS.find((p) => p.id === id)?.label
+    ?? allPlatforms?.find((p) => String(p.id) === id)?.abbreviation
+    ?? allPlatforms?.find((p) => String(p.id) === id)?.name
+    ?? id
+  const genreLabel = (id: string) => genres.find((g) => String(g.id) === id)?.name ?? id
+
+  const summarize = (labels: string[], max = 2) => {
+    if (!labels.length) return "Any"
+    if (labels.length <= max) return labels.join(", ")
+    return `${labels.slice(0, max).join(", ")} +${labels.length - max}`
+  }
+
+  const statusSummary = currentStatus === "all" ? "Any" : currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1)
+  const genreSummary = summarize(currentGenres.map(genreLabel))
+  const platformSummary = summarize(currentPlatforms.map(platformLabel))
+  const yearSummary = localFrom && localTo ? `${localFrom}–${localTo}` : localFrom ? `${localFrom}+` : localTo ? `Up to ${localTo}` : "Any"
 
   return (
     <>
-      <FilterSection label="Status" py={[22, 20]}>
+      <FilterSection label="Status" summary={statusSummary} py={[22, 20]}>
         <Group gap={6}>
           {(["all", "released", "upcoming"] as Status[]).map((s) => (
             <Chip key={s} size="sm" checked={currentStatus === s} onChange={() => onStatusChange(s)}>
@@ -58,7 +88,7 @@ function FilterSections({
         </Group>
       </FilterSection>
 
-      <FilterSection label="Genre">
+      <FilterSection label="Genre" summary={genreSummary}>
         <Flex wrap="wrap" gap="7px 6px">
           {genres.map((g) => (
             <Chip key={g.id} checked={currentGenres.includes(String(g.id))} onChange={() => onGenreToggle(String(g.id))}>{g.name}</Chip>
@@ -66,7 +96,7 @@ function FilterSections({
         </Flex>
       </FilterSection>
 
-      <FilterSection label="Platform">
+      <FilterSection label="Platform" summary={platformSummary}>
         <Flex wrap="wrap" gap="7px 6px">
           {PLATFORMS.map((p) => (
             <Chip key={p.id} checked={currentPlatforms.includes(p.id)} onChange={() => onPlatformToggle(p.id)}>{p.label}</Chip>
@@ -96,7 +126,7 @@ function FilterSections({
         )}
       </FilterSection>
 
-      <FilterSection label={`Min critic score${minScore ? ` · ${minScore}` : ""}`} py={[20, 26]}>
+      <FilterSection label="Min critic score" summary={minScore > 0 ? `${minScore}+` : "Any"} py={[20, 26]}>
         <Slider
           value={minScore}
           onChange={onMinScoreChange}
@@ -113,7 +143,7 @@ function FilterSections({
         </Group>
       </FilterSection>
 
-      <FilterSection label="Release year" py={[20, 22]}>
+      <FilterSection label="Release year" summary={yearSummary} py={[20, 22]}>
         <YearPickerInput
           type="range"
           placeholder="Any range"
@@ -205,7 +235,12 @@ export default function FilterSidebar({
         {inDrawer ? (
           <FilterSections {...sectionsProps} />
         ) : (
-          <Box bg="#0E1428" bdrs={16} bd="1px solid rgba(139,107,255,0.18)" style={{ overflow: "hidden" }}>
+          <Box
+            bg="#0E1428"
+            bdrs={16}
+            bd="1px solid rgba(139,107,255,0.18)"
+            style={{ overflowX: "hidden", overflowY: "auto", maxHeight: "calc(100vh - 110px)" }}
+          >
             <FilterSections {...sectionsProps} />
           </Box>
         )}

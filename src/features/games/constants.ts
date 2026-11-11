@@ -35,4 +35,28 @@ export const PLATFORMS = [
   { label: "Mobile", id: "34" },
 ]
 
+// IGDB's platform list mixes ~35 recognizable platforms in with ~180 obscure
+// ones (vintage mainframes, dev boards, defunct mobile OSes) with no clean
+// field to tell them apart -- platform_type lumps PC in with Windows Mobile
+// and BlackBerry OS. "Show all platforms" expands into this curated allowlist
+// instead of IGDB's raw list, rather than surfacing all of it.
+export const EXPANDED_PLATFORM_IDS = new Set([
+  // PC
+  "6", "14", "3",
+  // Mobile
+  "34", "39",
+  // Nintendo
+  "18", "19", "58", "4", "21", "5", "41", "130", "508", "33", "22", "24", "20", "37", "87",
+  // Sony
+  "7", "8", "9", "48", "167", "38", "46", "165", "390",
+  // Microsoft
+  "11", "12", "49", "169",
+  // Sega
+  "64", "29", "32", "23", "35", "78", "30",
+  // Atari
+  "59", "60", "62",
+  // VR
+  "384", "385", "386", "471",
+])
+
 export type Status = "all" | "released" | "upcoming"
