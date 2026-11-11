@@ -200,6 +200,7 @@ function relatedCardProps(g: RelatedGame) {
     releaseYear: g.first_release_date != null ? dayjs.unix(g.first_release_date).year() : null,
     isUpcoming: g.first_release_date != null && dayjs.unix(g.first_release_date).isAfter(dayjs(), 'day'),
     genres: g.genres.map((x) => x.name),
+    platforms: g.platforms.map((x) => x.abbreviation ?? x.name),
   }
 }
 
