@@ -107,7 +107,7 @@ export default function ListDetailView({ detail, back, meta, actions, notice, on
                   releaseYear={g.release_year}
                   isUpcoming={g.release_year != null && g.release_year > new Date().getFullYear()}
                   genres={g.genres.map((x) => x.name)}
-                  communityScore={g.user_rating ?? undefined}
+                  userScore={g.user_rating ?? null}
                   showWish={false}
                 />
                 {onRemoveGame && (

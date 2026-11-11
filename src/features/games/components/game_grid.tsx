@@ -29,11 +29,12 @@ type Props = {
   isLoading: boolean
   currentPage: number
   wishlistedIds?: Set<number>
+  userRatings?: Map<number, number>
   onPageChange: (page: number) => void
   onClearAll: () => void
 }
 
-export default function GameGrid({ games, isFetching, isLoading, currentPage, wishlistedIds, onPageChange, onClearAll }: Props) {
+export default function GameGrid({ games, isFetching, isLoading, currentPage, wishlistedIds, userRatings, onPageChange, onClearAll }: Props) {
   if (isLoading) {
     return (
       <SimpleGrid cols={{ base: 2, xs: 3, sm: 3, md: 4, lg: 5 }} spacing="md">
@@ -68,6 +69,7 @@ export default function GameGrid({ games, isFetching, isLoading, currentPage, wi
               genres={g.genres.map((x) => x.name)}
               platforms={g.platforms.map((x) => x.abbreviation ?? x.name)}
               communityScore={g.playra_community_score}
+              userScore={userRatings?.get(g.id) ?? null}
               inWishlist={wishlistedIds?.has(g.id) ?? false}
             />
           ))}

@@ -163,16 +163,22 @@ export default function GameCard({
       </AspectRatio>
 
       <Box px={12} py={10}>
-        {genres?.[0] && (
-          <Text fz={10} tt="uppercase" c="dark.3" fw={700} lineClamp={1} style={{ letterSpacing: 1.4 }}>
-            {genres[0]}
-          </Text>
+        {(genres?.[0] || year) && (
+          <Group gap={0} wrap="nowrap" align="baseline">
+            <Text fz={10} tt="uppercase" c="dark.3" fw={700} lineClamp={1} style={{ letterSpacing: 1.4, flex: '0 1 75%', minWidth: 0 }}>
+              {genres?.[0] ?? ''}
+            </Text>
+            <Box style={{ flex: '0 0 5%' }} />
+            <Text fz={10} c="dark.3" ff="monospace" ta="right" style={{ flex: '0 0 20%', flexShrink: 0 }}>
+              {year ?? ''}
+            </Text>
+          </Group>
         )}
-        <Text fw={700} fz={13} c="dark.0" mt={genres?.[0] ? 2 : 0} lineClamp={1} lh={1.2} style={{ letterSpacing: -0.2 }}>
+        <Text fw={700} fz={13} c="dark.0" mt={(genres?.[0] || year) ? 2 : 0} lineClamp={1} lh={1.2} style={{ letterSpacing: -0.2 }}>
           {name}
         </Text>
-        <Group justify="space-between" mt={8} align="center" gap={4} wrap="nowrap">
-          <Group gap={4} wrap="nowrap">
+        <Group justify="space-between" mt={8} align="center" gap={6} wrap="nowrap">
+          <Group gap={4} wrap="nowrap" style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
             {sorted.slice(0, MAX_PLATFORMS_DESKTOP).map((label, i) => (
               <PlatformPill key={label} visibleFrom={i >= MAX_PLATFORMS_MOBILE ? 'sm' : undefined}>{label}</PlatformPill>
             ))}
@@ -182,7 +188,6 @@ export default function GameCard({
             {sorted.length > MAX_PLATFORMS_MOBILE && (
               <PlatformPill muted hiddenFrom="sm">+{sorted.length - MAX_PLATFORMS_MOBILE}</PlatformPill>
             )}
-            {!sorted.length && year && <Text fz={11} c="dark.3" ff="monospace">{year}</Text>}
           </Group>
           {!isUpcoming && (
             <Group gap={3} wrap="nowrap" style={{ flexShrink: 0 }}>

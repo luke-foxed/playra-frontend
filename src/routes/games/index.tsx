@@ -31,14 +31,16 @@ function RouteComponent() {
     ...gamesQueryOptions(effectiveSearch),
     placeholderData: keepPreviousData,
   })
-  const { wishlistedIds } = useUserLibrary()
+  const { wishlistedIds, userRatings } = useUserLibrary()
   const filters = useGamesFilters(search)
 
   const [sidebarOpen, { toggle: toggleSidebar }] = useDisclosure(true)
   const [drawerOpen, { open: openDrawer, close: closeDrawer }] = useDisclosure(false)
 
   const filterCount = filters.activeFilterCount > 0 && (
-    <Badge size="xs" circle variant="gradient" gradient={{ from: "violet.4", to: "violet.6" }}>{filters.activeFilterCount}</Badge>
+    <Badge size="xs" circle variant="gradient" gradient={{ from: "violet.4", to: "violet.6" }} style={{ flexShrink: 0 }}>
+      {filters.activeFilterCount}
+    </Badge>
   )
 
   return (
@@ -69,7 +71,10 @@ function RouteComponent() {
                 rightSection={<ChevronIcon size={11} style={{ transform: sidebarOpen ? "rotate(180deg)" : "none", transition: "transform 0.25s ease" }} />}
                 onClick={toggleSidebar}
               >
-                Filters {filterCount}
+                <Group gap={6} wrap="nowrap" component="span">
+                  <span>Filters</span>
+                  {filterCount}
+                </Group>
               </Button>
               <Button
                 hiddenFrom="sm"
@@ -79,7 +84,10 @@ function RouteComponent() {
                 leftSection={<FilterIcon size={13} />}
                 onClick={openDrawer}
               >
-                Filters {filterCount}
+                <Group gap={6} wrap="nowrap" component="span">
+                  <span>Filters</span>
+                  {filterCount}
+                </Group>
               </Button>
 
               {/* No total count any more (IGDB doesn't give one cheaply) -- show
@@ -115,6 +123,7 @@ function RouteComponent() {
             isLoading={isLoading}
             currentPage={search.page ?? 1}
             wishlistedIds={wishlistedIds}
+            userRatings={userRatings}
             onPageChange={filters.setPage}
             onClearAll={filters.clearAll}
           />
