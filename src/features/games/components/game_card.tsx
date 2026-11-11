@@ -177,7 +177,7 @@ export default function GameCard({
         <Text fw={700} fz={13} c="dark.0" mt={(genres?.[0] || year) ? 2 : 0} lineClamp={1} lh={1.2} style={{ letterSpacing: -0.2 }}>
           {name}
         </Text>
-        <Group justify="space-between" mt={8} align="center" gap={6} wrap="nowrap">
+        <Group justify="space-between" mt={3} align="center" gap={6} wrap="nowrap">
           <Group gap={4} wrap="nowrap" style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
             {sorted.slice(0, MAX_PLATFORMS_DESKTOP).map((label, i) => (
               <PlatformPill key={label} visibleFrom={i >= MAX_PLATFORMS_MOBILE ? 'sm' : undefined}>{label}</PlatformPill>
@@ -190,16 +190,29 @@ export default function GameCard({
             )}
           </Group>
           {!isUpcoming && (
-            <Group gap={3} wrap="nowrap" style={{ flexShrink: 0 }}>
+            <Box
+              px={9}
+              py={3}
+              bdrs={999}
+              style={{
+                flexShrink: 0,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                background: displayScore != null
+                  ? `color-mix(in oklab, ${hasUserScore ? 'var(--mantine-color-violet-5)' : '#F0C36B'} 22%, rgba(10,15,31,.55))`
+                  : 'rgba(255,255,255,0.05)',
+              }}
+            >
               <StarIcon
-                size={12}
+                size={13}
                 fill={displayScore != null}
                 style={{ color: displayScore != null ? (hasUserScore ? 'var(--mantine-color-violet-4)' : '#F0C36B') : 'var(--mantine-color-dark-4)' }}
               />
-              <Text fz={12} fw={600} ff="monospace" c={displayScore != null ? 'dark.1' : 'dark.4'}>
+              <Text fz={13} fw={700} ff="monospace" c={displayScore != null ? 'dark.0' : 'dark.4'}>
                 {displayScore != null ? displayScore.toFixed(1) : '—'}
               </Text>
-            </Group>
+            </Box>
           )}
         </Group>
       </Box>
