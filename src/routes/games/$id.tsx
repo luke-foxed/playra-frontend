@@ -86,7 +86,7 @@ function RouteComponent() {
         <Grid mt="xl" gap={{ base: 16, sm: 36 }} align="flex-start">
           <Grid.Col span={{ base: 12, sm: 3.5 }}>
             {game.cover_url ? (
-              <BackgroundImage src={game.cover_url} bdrs="lg" h={{ base: 360, sm: "auto" }} style={{ aspectRatio: "3/4", ...coverShadow }}>
+              <BackgroundImage src={game.cover_url_large ?? game.cover_url} bdrs="lg" h={{ base: 360, sm: "auto" }} style={{ aspectRatio: "3/4", ...coverShadow }}>
                 <Box pos="absolute" inset={0} bg="repeating-linear-gradient(0deg, transparent 0 3px, rgba(0,0,0,.05) 3px 4px)" />
               </BackgroundImage>
             ) : (
